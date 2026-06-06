@@ -1,0 +1,226 @@
+{
+	"info": {
+		"_postman_id": "d1c0a0c4-1234-4a8b-9e9d-123456789abc",
+		"name": "POS Apotek Modern API",
+		"description": "Koleksi API lengkap untuk integrasi Frontend (React/Vue) dengan Backend POS Apotek.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Master Data",
+			"item": [
+				{
+					"name": "Get Products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" }
+						],
+						"url": {
+							"raw": "{{base_url}}/api/master/products",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "master", "products" ]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Transaksi POS (Kasir)",
+			"item": [
+				{
+					"name": "Checkout Pembayaran",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cashier_id\": 1,\n  \"patient_id\": 2,\n  \"payment_method\": \"Cash\",\n  \"total_amount\": 110000,\n  \"amount_tendered\": 150000,\n  \"discount\": 0,\n  \"tax\": 10000,\n  \"items\": [\n    { \"product_id\": 1, \"qty\": 2, \"price\": 50000 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/pos/checkout",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "pos", "checkout" ]
+						}
+					}
+				},
+				{
+					"name": "Hold Transaksi (Draft)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cashier_id\": 1,\n  \"patient_id\": 2,\n  \"payment_method\": \"Cash\",\n  \"total_amount\": 50000,\n  \"amount_tendered\": 0,\n  \"discount\": 0,\n  \"tax\": 0,\n  \"items\": [\n    { \"product_id\": 1, \"qty\": 1, \"price\": 50000 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/pos/hold",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "pos", "hold" ]
+						}
+					}
+				},
+				{
+					"name": "Void / Batal Transaksi",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"transaction_no\": \"TRX-XXX\",\n  \"authorizer_id\": 1,\n  \"void_reason\": \"Salah input\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/pos/void",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "pos", "void" ]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Pelayanan Kefarmasian",
+			"item": [
+				{
+					"name": "Approve Resep (APJ)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"apj_id\": 1,\n  \"status\": \"Approved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/pharmacy/prescriptions/1/validate",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "pharmacy", "prescriptions", "1", "validate" ]
+						}
+					}
+				},
+				{
+					"name": "Racik Obat (Compound)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pharmacist_id\": 1,\n  \"prescription_id\": 1,\n  \"compound_name\": \"Puyer Batuk\",\n  \"qty\": 10,\n  \"signa\": \"3 x 1\",\n  \"items\": [\n    { \"product_id\": 1, \"qty_per_compound\": 0.5 }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/pharmacy/compounds",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "pharmacy", "compounds" ]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Inventory Gudang",
+			"item": [
+				{
+					"name": "Submit Stock Opname",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": 1,\n  \"product_batch_id\": 1,\n  \"actual_qty\": 95,\n  \"reason\": \"Tikus\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/inventory/stock-opname",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "inventory", "stock-opname" ]
+						}
+					}
+				},
+				{
+					"name": "Approve Stock Opname",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"approver_id\": 1,\n  \"status\": \"Approved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/inventory/stock-opname/1/approve",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "inventory", "stock-opname", "1", "approve" ]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Procurement (Pengadaan)",
+			"item": [
+				{
+					"name": "Buat Purchase Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": 1,\n  \"items\": [\n    { \"product_id\": 1, \"qty_requested\": 500, \"notes\": \"Stok menipis\" }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/procurement/purchase-requests",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "procurement", "purchase-requests" ]
+						}
+					}
+				},
+				{
+					"name": "Terima Barang (Goods Receipt)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"supplier_id\": 1,\n  \"user_id\": 1,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"batch_no\": \"BCH-123\",\n      \"expired_date\": \"2028-12-01\",\n      \"qty_received\": 500\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/procurement/receive-goods",
+							"host": [ "{{base_url}}" ],
+							"path": [ "api", "procurement", "receive-goods" ]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000"
+		}
+	]
+}
