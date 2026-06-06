@@ -94,4 +94,10 @@ class CheckoutController extends Controller
             ], 400);
         }
     }
+    public function index()
+    {
+        $sales = \App\Models\POS\Sale::with('items.product')->orderBy('created_at', 'desc')->get();
+        return response()->json(['data' => $sales]);
+    }
 }
+

@@ -45,3 +45,5 @@ Route::prefix('procurement')->group(function () {
     Route::post('/receive-goods', [\App\Http\Controllers\Api\ProcurementController::class, 'receiveGoods']);
     Route::post('/returns', [\App\Http\Controllers\Api\ProcurementController::class, 'purchaseReturn']);
 });
+
+Route::get('/pos/history', [\App\Http\Controllers\Api\CheckoutController::class, 'index']);
