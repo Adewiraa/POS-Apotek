@@ -1,74 +1,43 @@
 <div align="center">
-  <h1>💊 POS Apotek Modern (Enterprise Edition)</h1>
-  <p>Sistem Point of Sales, Inventory, dan Manajemen Pelayanan Kefarmasian Berbasis Monolith Modular.</p>
+  <h1>💊 POS Apotek Modern</h1>
+  <p>Sistem Point of Sales, Inventory, dan Manajemen Pelayanan Kefarmasian Terpadu</p>
 
-  ![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
-  ![MySQL](https://img.shields.io/badge/MySQL-00000F?style=for-the-badge&logo=mysql&logoColor=white)
-  ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+  ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
+  ![Type](https://img.shields.io/badge/Type-Enterprise_Software-blue?style=for-the-badge)
 </div>
 
 ---
 
-## 📌 Tentang Proyek
-POS Apotek Modern adalah sebuah arsitektur piranti lunak (*software*) kelas *Enterprise* yang dirancang khusus untuk memenuhi standar pelayanan kefarmasian di Indonesia. Tidak hanya sekadar aplikasi kasir (POS) ritel biasa, sistem ini dilengkapi dengan kepatuhan audit farmasi, validasi apoteker (APJ), manajemen obat berisiko tinggi (LASA/High Alert), hingga siklus pengadaan (Procurement) skala besar.
+## 📌 Tentang Aplikasi
+**POS Apotek Modern** adalah sebuah piranti lunak kelas *Enterprise* yang dirancang khusus untuk memodernisasi tata kelola dan pelayanan di apotek maupun klinik. 
 
-Proyek ini dibangun dengan struktur **Monorepo** yang memisahkan antara `Back-End` (REST API) dan `Front-End` (UI/UX).
-
----
-
-## 🚀 Fitur Utama & Modul (Sesuai PRD)
-
-### 🛒 1. Modul POS Kasir (Penjualan)
-- **Mesin Checkout FEFO:** Algoritma pemotongan stok otomatis berdasarkan *First Expired First Out*.
-- **Hold & Recall Bill (Draft):** Fitur menyimpan struk sementara untuk pasien yang lupa membawa uang atau kembali mencari barang, tanpa mengganggu antrean kasir lain.
-- **Kalkulasi Finansial Lanjut:** Mendukung perhitungan Pajak (PPN), Diskon Bertingkat, dan *Service Fee* resep secara otomatis.
-- **Atomic Void (Batal Struk):** Sistem pembatalan/retur kasir aman yang otomatis mengembalikan stok ke rak (*Batch Rollback*) dan mencatat log pembatalan.
-
-### 🩺 2. Modul Pelayanan Kefarmasian (Sangat Krusial)
-- **Manajemen Racikan (Compound):** Fitur khusus untuk Apoteker meracik obat (puyer/kapsul/salep) dengan memotong stok fisik dari beberapa bahan baku (desimal) sekaligus.
-- **Sistem Approval Resep (APJ):** Transaksi obat keras wajib melewati layer persetujuan (Approval) dari Apoteker Penanggung Jawab di sistem sebelum bisa dibayar di kasir.
-- **Log Konseling Pasien (KIE):** Fitur pencatatan Komunikasi, Informasi, dan Edukasi untuk memenuhi standar akreditasi fasilitas kesehatan.
-
-### 📦 3. Modul Inventory & Kepatuhan Farmasi
-- **Manajemen Multi-Cabang & Rak:** Lacak persis di cabang mana dan di rak nomor berapa sebuah obat (*Batch*) diletakkan.
-- **Flagging Obat Berisiko:** Indikator visual bawaan untuk peringatan obat LASA (*Look Alike Sound Alike*) dan *High Alert*.
-- **Stock Opname Berjenjang:** Hitung fisik gudang tidak bisa diubah sepihak. Harus melewati status `Pending Approval` untuk disetujui Manajer/Owner agar mencegah manipulasi stok.
-
-### 🚚 4. Modul Pengadaan Lengkap (Procurement)
-- **Purchase Request (PR):** Usulan pembelian stok obat ke manajemen.
-- **Purchase Order (PO):** Konversi usulan menjadi pesanan resmi ke *Supplier*/PBF dengan kalkulasi total tagihan.
-- **Goods Receipt (Penerimaan Cerdas):** Penerimaan barang otomatis wajib mencatat nomor *Batch* dan *Expired Date* untuk menolak obat ilegal/kedaluwarsa.
-- **Retur Pembelian:** Mengurangi stok dari rak secara otomatis jika ada pengembalian ke *Supplier*.
-
-### 🔒 5. Keamanan & Audit Trail
-- **Spatie Roles & Permissions:** Kontrol akses berjenjang (Kasir, Apoteker, Gudang, Owner).
-- **Log Mutasi Stok:** Pencatatan setiap pergerakan sebutir obat (Masuk Pembelian, Keluar Kasir, Void, Retur, Racikan).
-- **Audit Logs:** Perekaman otomatis ke *database* mengenai setiap perubahan konfigurasi, kapan, oleh siapa, dan dari IP mana.
+Tidak seperti mesin kasir konvensional, sistem ini secara cerdas menggabungkan transaksi ritel dengan standar keamanan fasilitas kesehatan tingkat tinggi—mulai dari pencegahan obat kedaluwarsa, pemantauan obat keras, hingga manajemen pengadaan multi-cabang. Semua terintegrasi dalam satu platform yang mudah digunakan.
 
 ---
 
-## 📂 Struktur Repositori (Monorepo)
+## 🚀 Fitur Unggulan
 
-```text
-POS-Apotek/
-├── Back-End/         # Mesin Utama (Laravel 11+ / PHP 8.3) - REST API
-├── Front-End/        # User Interface Modern (Next.js/React + TailwindCSS)
-└── README.md         # Dokumentasi Repositori Utama
-```
+### 🛒 1. Transaksi Kasir Pintar (Point of Sales)
+- **Otomatisasi Stok (FEFO):** Setiap kali barang terjual, sistem otomatis mencari dan memotong stok dari obat yang memiliki tanggal kedaluwarsa paling dekat (*First Expired First Out*).
+- **Sistem Kasir Sibuk (Hold Bill):** Antrean panjang tidak lagi masalah. Kasir dapat menyimpan struk transaksi pelanggan yang sedang mencari uang atau kembali ke rak (Draft), lalu melayani pelanggan berikutnya tanpa menghilangkan data.
+- **Perhitungan Dinamis:** Sistem langsung menghitung Pajak (PPN), opsi diskon, dan tarif jasa racikan secara presisi sebelum struk dicetak.
+- **Pembatalan Aman (Void):** Mengembalikan barang dari transaksi yang batal langsung ke rak yang benar dengan mencatat alasan spesifik dan jejak mutasi.
 
-## 🛠️ Cara Menjalankan Backend (Developer)
-1. Buka folder `Back-End/` di Terminal.
-2. Jalankan `composer install`
-3. Salin `.env.example` ke `.env` dan konfigurasikan *database* (MySQL).
-4. Jalankan migrasi dan seeder awal:
-   ```bash
-   php artisan migrate:fresh --seed
-   ```
-5. Nyalakan server lokal:
-   ```bash
-   php artisan serve
-   ```
-6. **Bonus:** Anda bisa meng- *import* file `POS_Apotek_Postman_Collection.json` ke Postman Anda untuk melihat daftar API dan payload-nya secara langsung!
+### 🩺 2. Pelayanan Kefarmasian Digital
+- **Meja Racikan Obat:** Apoteker dapat membuat puyer, salep, atau kapsul dengan memotong stok beberapa bahan baku secara desimal dalam sekali klik.
+- **Gembok Obat Keras:** Obat-obatan resep atau obat keras secara otomatis terkunci di kasir dan baru bisa dibayar setelah Apoteker memvalidasi dan menyetujui (Approve) resep tersebut di sistem.
+- **Catatan Edukasi Pasien (KIE):** Fitur bawaan bagi Apoteker untuk mencatat riwayat konsultasi pasien tentang cara penggunaan dan efek samping obat.
+
+### 📦 3. Manajemen Gudang & Rak
+- **Pelacakan Posisi Obat:** Lacak secara persis di cabang mana dan di rak nomor berapa sebuah obat (*Batch*) diletakkan.
+- **Peringatan Keamanan Visual:** Sistem secara otomatis memberikan bendera (Flag) peringatan pada layar kasir jika obat yang dipindai tergolong LASA (*Look Alike Sound Alike*) atau *High Alert*.
+- **Stock Opname Anti-Manipulasi:** Hasil hitung fisik gudang tidak langsung mengubah data di komputer. Harus melewati pengajuan untuk disetujui (Approval) oleh Pemilik / Manajer Apotek terlebih dahulu.
+
+### 🚚 4. Rantai Pasok Terpadu (Procurement)
+- **Perencanaan Cerdas (Purchase Request):** Staf dapat membuat daftar usulan pembelian obat ke manajemen sebelum stok benar-benar habis.
+- **Order ke Supplier (Purchase Order):** Konversi usulan menjadi surat pesanan resmi ke PBF (Pedagang Besar Farmasi).
+- **Filter Penerimaan Barang:** Penjagaan gudang secara ketat. Barang yang datang dari kurir wajib didata Nomor Batch dan Tanggal Kedaluwarsanya oleh sistem.
+- **Retur ke Supplier:** Proses pengembalian barang cacat/kedaluwarsa yang terintegrasi otomatis dengan pemotongan stok di rak gudang.
 
 ---
-*Dibuat untuk merevolusi manajemen tata kelola fasilitas apotek modern secara digital.* 🚀
+*Membawa fasilitas kefarmasian Anda melangkah ke era digital dengan keamanan, kecepatan, dan akurasi tinggi.* 🚀
