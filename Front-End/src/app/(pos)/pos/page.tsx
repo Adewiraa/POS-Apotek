@@ -12,33 +12,97 @@ export default function PosPage() {
   const { cart, draftCarts, addItem, updateQty, removeItem, clearCart, holdCart, restoreCart, removeDraft } = usePosStore();
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  // State for integration
   const [products, setProducts] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [lastReceipt, setLastReceipt] = useState<any>(null);
 
-  // Load products to make "dummy add" realistic
+  // Load all products for local lookup
   useEffect(() => {
     MasterAPI.getProducts()
       .then((res) => {
-        setProducts(res?.data || res || []);
+        // API returns: { status, data: { data: [...], current_page, ... } }
+        const list = res?.data?.data || res?.data || [];
+        setProducts(Array.isArray(list) ? list : []);
       })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Gagal memuat produk", { description: "Menggunakan mode offline/lokal." });
+      .catch(() => {
+        toast.error("Gagal memuat produk dari server.");
       });
   }, []);
+
+  // Search product by barcode, name, id, or PRD-{id} pattern → add to cart on Enter
+  const handleSearchEnter = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    setIsSearching(true);
+    const queryLower = query.toLowerCase();
+
+    // Extract numeric id from patterns like "PRD-1", "prd-1", or plain "1"
+    const idFromPattern = queryLower.startsWith("prd-")
+      ? parseInt(queryLower.replace("prd-", ""))
+      : parseInt(query);
+
+    let found = products.find(
+      (p) =>
+        p.barcode?.toLowerCase() === queryLower ||
+        p.barcode === query ||
+        p.name?.toLowerCase().includes(queryLower) ||
+        p.id === idFromPattern ||
+        p.id?.toString() === query ||
+        p.sku?.toLowerCase() === queryLower
+    );
+
+    // Fallback: call API search if local match fails or products not loaded
+    if (!found) {
+      try {
+        const res = await MasterAPI.getProducts();
+        const allProducts: any[] = res?.data?.data || res?.data || [];
+        // Reload local cache
+        if (allProducts.length > 0) setProducts(allProducts);
+
+        found = allProducts.find(
+          (p) =>
+            p.barcode?.toLowerCase() === queryLower ||
+            p.name?.toLowerCase().includes(queryLower) ||
+            p.id === idFromPattern ||
+            p.id?.toString() === query
+        );
+      } catch {
+        // silent
+      }
+    }
+
+    if (found) {
+      addItem({
+        id: found.id.toString(),
+        name: found.name,
+        price: parseFloat(found.selling_price) || 0,
+        type: found.classification || found.category?.name || "Umum",
+        qty: 1,
+      });
+      toast.success(`✓ ${found.name} ditambahkan ke keranjang`);
+      setSearchQuery("");
+    } else {
+      toast.error("Produk tidak ditemukan", {
+        description: `Coba ketik nama langsung, misal: "${products[0]?.name || 'obat 1'}"`,
+      });
+    }
+
+    setIsSearching(false);
+    searchInputRef.current?.focus();
+  };
 
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F2: Focus Search
       if (e.key === "F2") {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
-      // F4: Hold Bill
       if (e.key === "F4") {
         e.preventDefault();
         if (cart.length > 0) {
@@ -46,29 +110,14 @@ export default function PosPage() {
           toast.success("Keranjang disimpan ke Draft (Hold)");
         }
       }
-      // F12: Bayar
       if (e.key === "F12") {
         e.preventDefault();
-        if (cart.length > 0) {
-          handleCheckout();
-        }
+        if (cart.length > 0) handleCheckout();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cart, holdCart]);
-
-  // Dummy product to test adding (using real data if available)
-  const dummyAdd = () => {
-    if (products.length > 0) {
-      const p = products[Math.floor(Math.random() * products.length)];
-      addItem({ id: p.id.toString(), name: p.name, price: p.selling_price || 10000, type: p.category?.name || "Umum", qty: 1 });
-      toast.info(`Ditambahkan: ${p.name}`);
-    } else {
-      addItem({ id: `PRD-${Date.now()}`, name: "Obat Sample", price: 12000, type: "Bebas", qty: 1 });
-      toast.info("Ditambahkan: Obat Sample");
-    }
-  };
 
   const subtotal = cart.reduce((acc, item) => acc + item.qty * item.price, 0);
   const tax = subtotal * 0.11; // 11% PPN
@@ -82,7 +131,7 @@ export default function PosPage() {
       const payload = {
         cashier_id: 1, // Harusnya dari useAuthStore
         payment_method: paymentMethod,
-        total_amount: total,
+        total: total,
         amount_tendered: total, // Asumsi uang pas untuk MVP
         discount: 0,
         tax: tax,
@@ -104,9 +153,15 @@ export default function PosPage() {
       try {
         await PosAPI.checkout(payload);
         toast.success("Pembayaran Berhasil!", { description: "Transaksi tercatat di database." });
-      } catch (apiError) {
-        // Mock fallback if API not running
-        toast.success("Pembayaran Berhasil (Mode Offline)!", { description: "Disimpan secara lokal." });
+      } catch (apiError: any) {
+        if (apiError.response) {
+          const errMsg = apiError.response.data?.message || "Validasi gagal dari server";
+          toast.error("Gagal menyimpan ke Database", { description: errMsg });
+          setIsProcessing(false);
+          return; // Stop execution so it doesn't clear cart and print
+        } else {
+          toast.success("Pembayaran Berhasil (Mode Offline)!", { description: "Disimpan secara lokal." });
+        }
       }
       
       clearCart();
@@ -130,25 +185,25 @@ export default function PosPage() {
         <section className="bg-white rounded-[22px] border border-slate-200 shadow-[0_18px_50px_rgba(15,23,42,0.06)] p-6">
           <div className="flex items-center justify-between gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              {isSearching ? (
+                <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-500 animate-spin" />
+              ) : (
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              )}
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Scan barcode atau cari nama obat (F2)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchEnter}
+                placeholder="Ketik barcode / nama obat lalu tekan Enter (F2)..."
                 className="w-full border border-slate-200 rounded-[16px] py-3 pr-4 pl-11 font-bold text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/50 shadow-sm transition-all"
               />
             </div>
-            <button 
-              onClick={dummyAdd} 
-              className="bg-slate-900 text-white rounded-[14px] px-5 py-3 font-bold text-sm hover:bg-slate-800 transition-colors whitespace-nowrap"
-            >
-              Tambah Acak (Test)
-            </button>
             
             {/* Drafts Modal */}
             <Dialog>
-              <DialogTrigger asChild>
-                <button className="relative bg-white border border-slate-200 text-slate-700 rounded-[14px] px-5 py-3 font-bold text-sm hover:bg-slate-50 transition-colors flex items-center whitespace-nowrap cursor-pointer">
+              <DialogTrigger className="relative bg-white border border-slate-200 text-slate-700 rounded-[14px] px-5 py-3 font-bold text-sm hover:bg-slate-50 transition-colors flex items-center whitespace-nowrap cursor-pointer">
                   <List className="h-4 w-4 mr-2 text-slate-500" />
                   Drafts
                   {draftCarts.length > 0 && (
@@ -156,7 +211,6 @@ export default function PosPage() {
                       {draftCarts.length}
                     </span>
                   )}
-                </button>
               </DialogTrigger>
               <DialogContent className="rounded-[22px] border-slate-200">
                 <DialogHeader>
@@ -390,7 +444,7 @@ export default function PosPage() {
           </table>
           <div className="text-sm flex justify-between font-bold border-t border-dashed pt-2 text-black">
             <span>TOTAL</span>
-            <span>Rp {lastReceipt.total_amount.toLocaleString()}</span>
+            <span>Rp {lastReceipt.total?.toLocaleString() || '0'}</span>
           </div>
           <div className="text-center text-xs mt-6 text-black">
             Terima Kasih<br/>

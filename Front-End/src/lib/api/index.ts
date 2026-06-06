@@ -24,13 +24,15 @@ export const PosAPI = {
     cashier_id: number;
     patient_id?: number;
     payment_method: string;
-    total_amount: number;
+    total: number;
     amount_tendered: number;
     discount: number;
     tax: number;
     items: { product_id: number; qty: number; price: number }[];
   }) => apiClient.post("/pos/checkout", data).then(res => res.data),
   
+  getHistory: () => apiClient.get("/pos/history").then(res => res.data),
+
   holdTransaction: (data: any) => apiClient.post("/pos/hold", data).then(res => res.data),
   
   voidTransaction: (data: {

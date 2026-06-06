@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Filter, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Filter, Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
+import { PosAPI } from "@/lib/api";
+import { toast } from "sonner";
 
 const chartData = [
   { name: "Senin", penjualan: 4200000 },
@@ -17,6 +19,26 @@ const chartData = [
 
 export default function SalesReportPage() {
   const [isExporting, setIsExporting] = useState(false);
+  const [sales, setSales] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSales();
+  }, []);
+
+  const fetchSales = async () => {
+    setIsLoading(true);
+    try {
+      const res = await PosAPI.getHistory();
+      // Assume res.data contains the sales array
+      setSales(res?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch sales history:", error);
+      toast.error("Gagal memuat data penjualan dari server.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleExport = () => {
     setIsExporting(true);
@@ -135,25 +157,40 @@ export default function SalesReportPage() {
               </tr>
             </thead>
             <tbody>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <tr key={i} className="group hover:bg-slate-50 transition-colors">
-                  <td className="py-4 px-4 text-[13px] font-black text-slate-900 border-b border-slate-100 group-last:border-0 rounded-l-[14px]">
-                    TRX-06062026-00{i}
-                  </td>
-                  <td className="py-4 px-4 text-[13px] font-bold text-slate-600 border-b border-slate-100 group-last:border-0">
-                    1{i}:30
-                  </td>
-                  <td className="py-4 px-4 text-[13px] font-bold text-slate-800 border-b border-slate-100 group-last:border-0">
-                    Kasir Pagi
-                  </td>
-                  <td className="py-4 px-4 text-[13px] font-bold text-slate-600 border-b border-slate-100 group-last:border-0">
-                    {i % 2 === 0 ? "QRIS" : "Tunai"}
-                  </td>
-                  <td className="py-4 px-4 text-[13px] font-black text-emerald-600 border-b border-slate-100 group-last:border-0 rounded-r-[14px] text-right">
-                    {(150000 * i).toLocaleString()}
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-500 font-bold">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-emerald-500" />
+                    Memuat data penjualan...
                   </td>
                 </tr>
-              ))}
+              ) : sales.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-500 font-bold">
+                    Tidak ada transaksi penjualan hari ini.
+                  </td>
+                </tr>
+              ) : (
+                sales.map((sale, i) => (
+                  <tr key={sale.id || i} className="group hover:bg-slate-50 transition-colors">
+                    <td className="py-4 px-4 text-[13px] font-black text-slate-900 border-b border-slate-100 group-last:border-0 rounded-l-[14px]">
+                      {sale.transaction_no || `TRX-06062026-00${i}`}
+                    </td>
+                    <td className="py-4 px-4 text-[13px] font-bold text-slate-600 border-b border-slate-100 group-last:border-0">
+                      {new Date(sale.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) || `1${i}:30`}
+                    </td>
+                    <td className="py-4 px-4 text-[13px] font-bold text-slate-800 border-b border-slate-100 group-last:border-0">
+                      Kasir {sale.cashier_id || 'Utama'}
+                    </td>
+                    <td className="py-4 px-4 text-[13px] font-bold text-slate-600 border-b border-slate-100 group-last:border-0">
+                      {sale.payment_method || (i % 2 === 0 ? "QRIS" : "Tunai")}
+                    </td>
+                    <td className="py-4 px-4 text-[13px] font-black text-emerald-600 border-b border-slate-100 group-last:border-0 rounded-r-[14px] text-right">
+                      {Number(sale.total).toLocaleString('id-ID')}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

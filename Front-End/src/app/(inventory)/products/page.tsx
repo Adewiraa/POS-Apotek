@@ -19,41 +19,51 @@ type Product = {
   selling_price: number;
 };
 
+const CLASSIFICATIONS = ["Obat Bebas", "Obat Bebas Terbatas", "Obat Keras", "Narkotika", "Psikotropika", "Suplemen", "Alkes", "Lainnya"];
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: "", code: "", price: "", stock: "" });
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    generic_name: "",
+    barcode: "",
+    classification: "Obat Bebas",
+    selling_price: "",
+    purchase_price: "",
+    min_stock: "10",
+  });
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.price) {
-      toast.error("Nama dan Harga produk wajib diisi!");
+    if (!newProduct.name || !newProduct.selling_price || !newProduct.purchase_price) {
+      toast.error("Nama, Harga Beli, dan Harga Jual wajib diisi!");
       return;
     }
-    
+
     setIsAdding(true);
-    
+
     const productPayload = {
       name: newProduct.name,
-      code: newProduct.code || `PRD-${Date.now()}`,
-      selling_price: parseFloat(newProduct.price),
-      stock: parseInt(newProduct.stock) || 0,
-      category_id: 1 // Default category for MVP
+      generic_name: newProduct.generic_name || null,
+      barcode: newProduct.barcode || null,
+      classification: newProduct.classification,
+      selling_price: parseFloat(newProduct.selling_price),
+      purchase_price: parseFloat(newProduct.purchase_price),
+      min_stock: parseInt(newProduct.min_stock) || 10,
     };
 
     try {
       await MasterAPI.createProduct(productPayload as any);
       toast.success("Produk berhasil ditambahkan!");
       setIsOpen(false);
-      setNewProduct({ name: "", code: "", price: "", stock: "" });
+      setNewProduct({ name: "", generic_name: "", barcode: "", classification: "Obat Bebas", selling_price: "", purchase_price: "", min_stock: "10" });
       loadProducts();
     } catch (err: any) {
-      toast.error("Gagal menambahkan produk", { description: err.message });
-      // Fallback for offline mode
-      setProducts([{ id: Date.now(), ...productPayload, category: { name: "Umum" } }, ...products]);
-      setIsOpen(false);
+      const serverMsg = err.response?.data?.message || err.message;
+      toast.error("Gagal menambahkan produk", { description: serverMsg });
     } finally {
       setIsAdding(false);
     }
@@ -99,40 +109,64 @@ export default function ProductsPage() {
         </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <button className="bg-gradient-to-br from-teal-600 to-sky-500 hover:from-teal-500 hover:to-sky-400 text-white rounded-[14px] px-5 py-4 font-black shadow-lg shadow-teal-500/20 border-0 transition-all cursor-pointer flex items-center">
+          <DialogTrigger className="bg-gradient-to-br from-teal-600 to-sky-500 hover:from-teal-500 hover:to-sky-400 text-white rounded-[14px] px-5 py-4 font-black shadow-lg shadow-teal-500/20 border-0 transition-all cursor-pointer flex items-center">
               <Plus className="mr-2 h-5 w-5" /> Tambah Produk
-            </button>
           </DialogTrigger>
-          <DialogContent className="rounded-[22px] border-slate-200">
+          <DialogContent className="rounded-[22px] border-slate-200 max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-xl font-black text-slate-900">Tambah Produk Baru</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-1">
+              {/* Nama Produk */}
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-500">Nama Produk *</label>
                 <Input className="rounded-[12px] border-slate-200 font-bold" placeholder="Contoh: Paracetamol 500mg" value={newProduct.name} onChange={(e) => setNewProduct({...newProduct, name: e.target.value})} />
               </div>
+              {/* Nama Generik */}
               <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Kode / SKU</label>
-                <Input className="rounded-[12px] border-slate-200 font-bold" placeholder="Kosongkan untuk otomatis" value={newProduct.code} onChange={(e) => setNewProduct({...newProduct, code: e.target.value})} />
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Nama Generik</label>
+                <Input className="rounded-[12px] border-slate-200 font-bold" placeholder="Opsional" value={newProduct.generic_name} onChange={(e) => setNewProduct({...newProduct, generic_name: e.target.value})} />
               </div>
+              {/* Barcode */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Barcode</label>
+                <Input className="rounded-[12px] border-slate-200 font-bold font-mono" placeholder="Scan atau isi manual (opsional)" value={newProduct.barcode} onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})} />
+              </div>
+              {/* Klasifikasi */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Klasifikasi Obat *</label>
+                <select
+                  className="w-full h-10 px-3 rounded-[12px] border border-slate-200 font-bold text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                  value={newProduct.classification}
+                  onChange={(e) => setNewProduct({...newProduct, classification: e.target.value})}
+                >
+                  {CLASSIFICATIONS.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Harga Beli & Harga Jual */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-500">Harga Jual *</label>
-                  <Input className="rounded-[12px] border-slate-200 font-bold" type="number" placeholder="0" value={newProduct.price} onChange={(e) => setNewProduct({...newProduct, price: e.target.value})} />
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500">Harga Beli *</label>
+                  <Input className="rounded-[12px] border-slate-200 font-bold" type="number" placeholder="0" value={newProduct.purchase_price} onChange={(e) => setNewProduct({...newProduct, purchase_price: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-500">Stok Awal</label>
-                  <Input className="rounded-[12px] border-slate-200 font-bold" type="number" placeholder="0" value={newProduct.stock} onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})} />
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-500">Harga Jual *</label>
+                  <Input className="rounded-[12px] border-slate-200 font-bold" type="number" placeholder="0" value={newProduct.selling_price} onChange={(e) => setNewProduct({...newProduct, selling_price: e.target.value})} />
                 </div>
+              </div>
+              {/* Stok Minimum */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-500">Stok Minimum (Alert)</label>
+                <Input className="rounded-[12px] border-slate-200 font-bold" type="number" placeholder="10" value={newProduct.min_stock} onChange={(e) => setNewProduct({...newProduct, min_stock: e.target.value})} />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" className="rounded-[12px] font-bold" onClick={() => setIsOpen(false)}>Batal</Button>
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white rounded-[12px] font-bold" onClick={handleAddProduct} disabled={isAdding}>
+              <button className="rounded-[12px] px-5 py-2.5 font-bold text-sm border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors" onClick={() => setIsOpen(false)}>Batal</button>
+              <button className="bg-gradient-to-br from-teal-600 to-sky-500 hover:from-teal-500 hover:to-sky-400 text-white rounded-[12px] px-6 py-2.5 font-black text-sm shadow-lg shadow-teal-500/20 border-0 transition-all disabled:opacity-60 disabled:cursor-not-allowed" onClick={handleAddProduct} disabled={isAdding}>
                 {isAdding ? "Menyimpan..." : "Simpan Produk"}
-              </Button>
+              </button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

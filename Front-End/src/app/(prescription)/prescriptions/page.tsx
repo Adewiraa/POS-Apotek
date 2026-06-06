@@ -92,10 +92,8 @@ export default function PrescriptionsPage() {
                       {r.status === "Approved" && (
                         <>
                           <Dialog>
-                            <DialogTrigger asChild>
-                              <button className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-[10px] h-8 w-8 flex items-center justify-center transition-colors" title="Preview Etiket">
+                            <DialogTrigger className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-[10px] h-8 w-8 flex items-center justify-center transition-colors" title="Preview Etiket">
                                 <Printer className="h-4 w-4" />
-                              </button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md rounded-[22px] border-slate-200">
                               <DialogHeader>

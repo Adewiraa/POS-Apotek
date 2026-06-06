@@ -38,12 +38,12 @@ export function AppSidebar() {
     <aside className="fixed inset-y-0 left-0 w-[280px] bg-white/90 border-r border-slate-200 p-[22px] flex flex-col gap-5 z-40 backdrop-blur-md">
       {/* Brand */}
       <div className="flex items-center gap-3 pb-[18px] border-b border-slate-200">
-        <div className="w-[46px] h-[46px] rounded-[16px] bg-gradient-to-br from-teal-600 to-green-500 flex items-center justify-center text-white font-black shadow-lg shadow-teal-500/20">
+        <div className="w-[46px] h-[46px] rounded-[16px] bg-gradient-to-br from-teal-500 to-sky-500 flex items-center justify-center text-white font-black shadow-lg shadow-teal-500/20">
           <Pill className="h-6 w-6" />
         </div>
         <div className="flex flex-col">
-          <h1 className="text-[18px] font-black text-slate-900 m-0 leading-tight">POS Apotek</h1>
-          <p className="text-[12px] font-black uppercase tracking-widest text-slate-500 m-0 mt-1">Modern</p>
+          <h1 className="text-[18px] font-black text-slate-900 m-0 leading-tight">Pharmify</h1>
+          <p className="text-[12px] font-black uppercase tracking-widest text-slate-500 m-0 mt-1">Pharmacy Management</p>
         </div>
       </div>
       

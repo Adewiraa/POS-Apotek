@@ -16,10 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "POS Apotek Modern",
-  description: "Sistem Point of Sales, Inventory, dan Manajemen Pelayanan Kefarmasian Terpadu",
+  title: "Pharmify — Pharmacy Management System",
+  description: "Platform manajemen apotek terintegrasi: POS Kasir, Stok Obat, Resep, dan SATUSEHAT.",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
+  themeColor: "#0d9488",
 };
 
 export default function RootLayout({
