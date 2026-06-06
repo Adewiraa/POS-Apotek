@@ -8,6 +8,9 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+// Dashboard Metrics
+Route::get('/dashboard/metrics', [\App\Http\Controllers\Api\DashboardController::class, 'getMetrics']);
+
 // Route Endpoint Transaksi Kasir
 Route::prefix('pos')->group(function () {
     Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'store']);
