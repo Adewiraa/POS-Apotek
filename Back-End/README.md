@@ -1,58 +1,65 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ⚙️ POS Apotek Modern - REST API (Backend)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Selamat datang di mesin utama (*core engine*) dari POS Apotek Modern. Proyek Backend ini dibangun menggunakan **Laravel 13** dan berfokus pada penyediaan *RESTful API* yang cepat, aman, dan dapat diandalkan untuk digunakan oleh aplikasi *Frontend* (React/Vue/Mobile).
 
-## About Laravel
+## 💡 Arsitektur & Teknologi
+- **Framework:** Laravel 13 (PHP 8.3)
+- **Database:** MySQL
+- **Pola Desain:** *Service Repository Pattern* (Logika bisnis dipisahkan dari Controller ke dalam folder `app/Services/` untuk menjaga kode tetap bersih dan *scalable*).
+- **Format Respons:** Standar JSON API.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Fitur Teknis Backend
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Backend ini membagi layanannya ke dalam beberapa modul utama yang melayani *endpoint* spesifik:
 
-## Learning Laravel
+### 1. Modul POS Kasir (Penjualan)
+Modul ini menangani seluruh logika transaksi di meja depan.
+- **`CheckoutService`:** Menghitung total harga, pajak, diskon, dan otomatis memotong stok barang dari rak dengan metode **FEFO** (Barang yang kedaluwarsanya paling dekat akan dipotong lebih dulu).
+- **Hold Transaction:** Menyimpan data transaksi (*Draft*) ke dalam database jika pelanggan menunda pembayaran (kasir sibuk).
+- **`VoidService` (Pembatalan Aman):** Menangani algoritma kompleks untuk mengembalikan (*rollback*) jumlah stok obat secara presisi ke tabel `product_batches` apabila terjadi pembatalan struk atau retur kasir.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 2. Modul Pelayanan Kefarmasian
+Modul ini menangani logika khusus Apotek yang tidak ada di aplikasi ritel biasa.
+- **Racikan (Compound):** Endpoint khusus untuk meracik resep. *Backend* secara otomatis membagi 1 produk puyer menjadi pemotongan proporsional (desimal) ke banyak bahan baku sekaligus.
+- **Validasi Resep:** Logika *State Machine* di mana resep masuk sebagai `Draft`, divalidasi oleh Apoteker menjadi `Approved`, dan baru bisa dieksekusi pembayarannya.
+- **Konseling Pasien:** Tabel dan *endpoint* terdedikasi untuk mencatat log Komunikasi Informasi & Edukasi (KIE) antara apoteker dan pasien.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 3. Modul Inventory & Kepatuhan
+Mengelola pergerakan stok secara aman dan terkontrol.
+- **Multi-Location:** Relasi database mendukung banyak cabang dan banyak rak (`branches` & `locations`).
+- **Stock Opname (Penyesuaian Stok):** Fitur hitung fisik *inventory* yang menerapkan lapisan otorisasi. Data yang diinput hanya tersimpan sebagai *Draft*, lalu harus disetujui (Approve) melalui endpoint `/api/inventory/stock-opname/{id}/approve` sebelum stok aslinya berubah.
+- **Label Keamanan:** Database `products` memiliki kolom `is_lasa` dan `is_high_alert` untuk *flagging* obat berisiko.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 4. Modul Pengadaan (Procurement)
+Menangani siklus rantai pasok ke Pedagang Besar Farmasi (PBF).
+- **Alur Lengkap:** Mulai dari pembuatan *Purchase Request* (PR), Konversi ke *Purchase Order* (PO), hingga Penerimaan Barang (*Goods Receipt*).
+- **Keamanan Penerimaan:** Logika *Backend* akan melempar *error* apabila staf mencoba menerima stok sediaan farmasi tanpa memasukkan *Batch Number* dan *Expired Date*.
+- **Retur Supplier:** Mengurangi stok rak secara otomatis apabila ada barang rusak yang dikembalikan ke PBF.
 
-## Agentic Development
+### 5. Audit Trail & Log Mutasi
+Sistem tidak pernah menghapus pergerakan barang secara gaib.
+- Tabel `stock_mutations` akan mencatat setiap satuan barang yang masuk atau keluar dengan detail tipe mutasi (`in_purchase`, `out_sale`, `out_return`, dll).
+- Tabel `audit_logs` bertindak sebagai kamera pengawas sistem yang merekam setiap *endpoint* kritis: kapan tereksekusi, *User ID* siapa, perubahan nilai datanya (*old_values* & *new_values*), serta *IP Address*.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
+
+## 🛠️ Instalasi & Dokumentasi API
+
+Untuk menjalankan *server* lokal dan melihat daftar *endpoint* secara lengkap, silakan muat (*import*) file **Postman Collection** yang telah disediakan di root direktori proyek (`POS_Apotek_Postman_Collection.json`).
 
 ```bash
-composer require laravel/boost --dev
+# 1. Install dependensi
+composer install
 
-php artisan boost:install
+# 2. Setup environment
+cp .env.example .env
+php artisan key:generate
+
+# 3. Jalankan migrasi database
+php artisan migrate:fresh --seed
+
+# 4. Nyalakan server
+php artisan serve
 ```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
