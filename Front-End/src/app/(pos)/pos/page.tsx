@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, Plus, Minus, Trash2, CreditCard, Save, List, Loader2, Printer } from "lucide-react";
+import { Search, Plus, Minus, Trash2, CreditCard, Save, List, Loader2, Printer, AlertTriangle, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { usePosStore } from "@/stores/pos-store";
-import { MasterAPI, PosAPI } from "@/lib/api";
+import { MasterAPI, PosAPI, SearchAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function PosPage() {
@@ -19,6 +19,12 @@ export default function PosPage() {
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [lastReceipt, setLastReceipt] = useState<any>(null);
 
+  // States for Prescription validation
+  const [selectedPrescription, setSelectedPrescription] = useState<any | null>(null);
+  const [prescriptionSearch, setPrescriptionSearch] = useState("");
+  const [prescriptionResults, setPrescriptionResults] = useState<any[]>([]);
+  const [isSearchingPrescription, setIsSearchingPrescription] = useState(false);
+
   // Load all products for local lookup
   useEffect(() => {
     MasterAPI.getProducts()
@@ -31,6 +37,33 @@ export default function PosPage() {
         toast.error("Gagal memuat produk dari server.");
       });
   }, []);
+
+  const handlePrescriptionSearch = async (val: string) => {
+    setPrescriptionSearch(val);
+    if (val.trim().length < 1) {
+      setPrescriptionResults([]);
+      return;
+    }
+    setIsSearchingPrescription(true);
+    try {
+      const res = await SearchAPI.global(val, 5);
+      setPrescriptionResults(res?.data?.resep || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearchingPrescription(false);
+    }
+  };
+
+  const selectPrescription = (rx: any) => {
+    setSelectedPrescription(rx);
+    setPrescriptionSearch("");
+    setPrescriptionResults([]);
+  };
+
+  const hasHardDrug = cart.some(
+    (item) => item.type === "Obat Keras" || item.type?.toLowerCase() === "obat keras"
+  );
 
   // Search product by barcode, name, id, or PRD-{id} pattern → add to cart on Enter
   const handleSearchEnter = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -126,6 +159,13 @@ export default function PosPage() {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     
+    if (hasHardDrug && !selectedPrescription) {
+      toast.error("Validasi Resep Diperlukan", {
+        description: "Transaksi ini mengandung Obat Keras. Harap cari dan pilih resep dokter yang valid terlebih dahulu."
+      });
+      return;
+    }
+    
     setIsProcessing(true);
     try {
       const payload = {
@@ -135,6 +175,7 @@ export default function PosPage() {
         amount_tendered: total, // Asumsi uang pas untuk MVP
         discount: 0,
         tax: tax,
+        prescription_id: hasHardDrug && selectedPrescription ? selectedPrescription.id : undefined,
         items: cart.map(item => ({
           product_id: parseInt(item.id.replace('PRD-', '')), 
           qty: item.qty,
@@ -153,18 +194,20 @@ export default function PosPage() {
       try {
         await PosAPI.checkout(payload);
         toast.success("Pembayaran Berhasil!", { description: "Transaksi tercatat di database." });
+        clearCart();
+        setSelectedPrescription(null); // Reset prescription
       } catch (apiError: any) {
         if (apiError.response) {
           const errMsg = apiError.response.data?.message || "Validasi gagal dari server";
-          toast.error("Gagal menyimpan ke Database", { description: errMsg });
+          toast.error("Transaksi Ditolak", { description: errMsg });
           setIsProcessing(false);
           return; // Stop execution so it doesn't clear cart and print
         } else {
           toast.success("Pembayaran Berhasil (Mode Offline)!", { description: "Disimpan secara lokal." });
+          clearCart();
+          setSelectedPrescription(null); // Reset
         }
       }
-      
-      clearCart();
       
       // Auto trigger print
       setTimeout(() => {
@@ -368,6 +411,69 @@ export default function PosPage() {
               ))}
             </div>
           </div>
+          
+          {hasHardDrug && (
+            <div className="px-6 mb-6">
+              <div className="flex items-center gap-2 text-amber-400 text-xs font-black uppercase tracking-[0.05em] mb-3">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                Resep Dokter Wajib (Obat Keras)
+              </div>
+              {selectedPrescription ? (
+                <div className="flex items-center justify-between bg-slate-800 border border-slate-700 text-white rounded-[14px] p-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-extrabold text-sm text-slate-100 truncate">{selectedPrescription.label}</p>
+                    <p className="text-xs text-slate-400 mt-1 truncate">Pasien: {selectedPrescription.sub_label}</p>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 mt-2 text-[9px] font-black uppercase tracking-wider ${
+                      selectedPrescription.meta === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                    }`}>
+                      {selectedPrescription.meta}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedPrescription(null)}
+                    className="text-slate-400 hover:text-white transition-colors p-1.5 ml-2 hover:bg-slate-700/50 rounded-full"
+                    title="Hapus Resep"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={prescriptionSearch}
+                    onChange={(e) => handlePrescriptionSearch(e.target.value)}
+                    placeholder="Ketik No. Resep (cth: RX-TEST-001)..."
+                    className="w-full bg-slate-850 border border-slate-700 text-white rounded-[14px] py-3 px-4 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all font-bold"
+                  />
+                  {isSearchingPrescription && (
+                    <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-teal-400 animate-spin" />
+                  )}
+                  {prescriptionResults.length > 0 && (
+                    <div className="absolute left-0 right-0 bottom-full mb-2 bg-slate-800 border border-slate-700 rounded-[14px] max-h-[160px] overflow-y-auto z-50 shadow-2xl overflow-hidden">
+                      {prescriptionResults.map((rx) => (
+                        <button
+                          key={rx.id}
+                          onClick={() => selectPrescription(rx)}
+                          className="w-full text-left px-4 py-3 text-xs text-white hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-0 flex justify-between items-center"
+                        >
+                          <div className="min-w-0 flex-1 pr-3">
+                            <span className="font-extrabold text-[13px] text-slate-100 block truncate">{rx.label}</span>
+                            <p className="text-[10px] text-slate-400 mt-0.5 truncate">Pasien: {rx.sub_label}</p>
+                          </div>
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            rx.meta === 'Approved' ? 'bg-emerald-600/40 text-emerald-400' : 'bg-amber-600/40 text-amber-400'
+                          }`}>
+                            {rx.meta}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="p-6 bg-slate-950 mt-auto flex flex-col gap-3">
             <button 

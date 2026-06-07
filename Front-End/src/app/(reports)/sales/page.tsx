@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { PosAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const chartData = [
   { name: "Senin", penjualan: 4200000 },
@@ -21,6 +22,76 @@ export default function SalesReportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [sales, setSales] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // States for Customer Return
+  const [selectedSaleForReturn, setSelectedSaleForReturn] = useState<any | null>(null);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+  const [returnItems, setReturnItems] = useState<any[]>([]);
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+
+  const handleOpenReturnModal = (sale: any) => {
+    setSelectedSaleForReturn(sale);
+    const items = (sale.items || []).map((item: any) => ({
+      product_id: item.product_id,
+      product_batch_id: item.product_batch_id,
+      name: item.product?.name || `Produk ID ${item.product_id}`,
+      qty: 0,
+      maxQty: item.qty,
+      condition: "Layak Jual"
+    }));
+    setReturnItems(items);
+    setReturnReason("");
+    setIsReturnModalOpen(true);
+  };
+
+  const handleQtyChange = (index: number, val: number) => {
+    const updated = [...returnItems];
+    updated[index].qty = Math.max(0, Math.min(updated[index].maxQty, val));
+    setReturnItems(updated);
+  };
+
+  const handleConditionChange = (index: number, val: string) => {
+    const updated = [...returnItems];
+    updated[index].condition = val;
+    setReturnItems(updated);
+  };
+
+  const handleSubmitReturn = async () => {
+    const itemsToReturn = returnItems.filter(item => item.qty > 0);
+    if (itemsToReturn.length === 0) {
+      toast.error("Tidak ada item yang dipilih untuk diretur.");
+      return;
+    }
+    if (!returnReason.trim()) {
+      toast.error("Alasan retur harus diisi.");
+      return;
+    }
+
+    setIsSubmittingReturn(true);
+    try {
+      const payload = {
+        transaction_no: selectedSaleForReturn.transaction_no,
+        user_id: 1,
+        reason: returnReason,
+        items: itemsToReturn.map(item => ({
+          product_id: item.product_id,
+          product_batch_id: item.product_batch_id,
+          qty: item.qty,
+          condition: item.condition
+        }))
+      };
+      await PosAPI.salesReturn(payload);
+      toast.success("Retur penjualan berhasil diproses!");
+      setIsReturnModalOpen(false);
+      fetchSales();
+    } catch (error: any) {
+      const errMsg = error?.response?.data?.message || error.message || "Gagal memproses retur";
+      toast.error("Gagal memproses retur", { description: errMsg });
+    } finally {
+      setIsSubmittingReturn(false);
+    }
+  };
 
   useEffect(() => {
     fetchSales();
@@ -154,19 +225,20 @@ export default function SalesReportPage() {
                 <th className="text-[11px] font-black uppercase tracking-widest text-slate-400 pb-4 px-4 border-b border-slate-100">Kasir</th>
                 <th className="text-[11px] font-black uppercase tracking-widest text-slate-400 pb-4 px-4 border-b border-slate-100">Metode</th>
                 <th className="text-[11px] font-black uppercase tracking-widest text-slate-400 pb-4 px-4 border-b border-slate-100 text-right">Total (Rp)</th>
+                <th className="text-[11px] font-black uppercase tracking-widest text-slate-400 pb-4 px-4 border-b border-slate-100 text-right w-[100px]">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500 font-bold">
+                  <td colSpan={6} className="py-8 text-center text-slate-500 font-bold">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-emerald-500" />
                     Memuat data penjualan...
                   </td>
                 </tr>
               ) : sales.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-500 font-bold">
+                  <td colSpan={6} className="py-8 text-center text-slate-500 font-bold">
                     Tidak ada transaksi penjualan hari ini.
                   </td>
                 </tr>
@@ -185,8 +257,16 @@ export default function SalesReportPage() {
                     <td className="py-4 px-4 text-[13px] font-bold text-slate-600 border-b border-slate-100 group-last:border-0">
                       {sale.payment_method || (i % 2 === 0 ? "QRIS" : "Tunai")}
                     </td>
-                    <td className="py-4 px-4 text-[13px] font-black text-emerald-600 border-b border-slate-100 group-last:border-0 rounded-r-[14px] text-right">
+                    <td className="py-4 px-4 text-[13px] font-black text-emerald-600 border-b border-slate-100 group-last:border-0 text-right">
                       {Number(sale.total).toLocaleString('id-ID')}
+                    </td>
+                    <td className="py-4 px-4 border-b border-slate-100 group-last:border-0 rounded-r-[14px] text-right">
+                      <button
+                        onClick={() => handleOpenReturnModal(sale)}
+                        className="bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-[10px] px-3.5 py-1.5 text-xs font-black transition-all cursor-pointer"
+                      >
+                        Retur
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -195,6 +275,93 @@ export default function SalesReportPage() {
           </table>
         </div>
       </section>
+
+      {/* Dialog Form Retur Penjualan */}
+      <Dialog open={isReturnModalOpen} onOpenChange={setIsReturnModalOpen}>
+        <DialogContent className="rounded-[22px] border-slate-200 max-w-2xl bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-slate-900">Form Retur Penjualan</DialogTitle>
+          </DialogHeader>
+          {selectedSaleForReturn && (
+            <div className="mt-4 flex flex-col gap-5">
+              <div className="flex justify-between items-center text-xs font-bold text-slate-500 bg-slate-50 p-4 rounded-[16px] border border-slate-200">
+                <span>Struk: <strong className="text-slate-900 font-extrabold">{selectedSaleForReturn.transaction_no}</strong></span>
+                <span>Waktu: <strong className="text-slate-900 font-extrabold">{new Date(selectedSaleForReturn.created_at).toLocaleString('id-ID')}</strong></span>
+              </div>
+
+              <div className="max-h-[250px] overflow-y-auto border border-slate-100 rounded-[16px] overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-[11px] font-black uppercase text-slate-400">
+                      <th className="p-3">Nama Produk</th>
+                      <th className="p-3 text-center">Beli</th>
+                      <th className="p-3 text-center w-[120px]">Qty Retur</th>
+                      <th className="p-3 text-center w-[150px]">Kondisi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {returnItems.map((item, idx) => (
+                      <tr key={idx} className="border-t border-slate-100 hover:bg-slate-50/50 text-xs font-bold text-slate-700">
+                        <td className="p-3 font-extrabold text-slate-900">{item.name}</td>
+                        <td className="p-3 text-center">{item.maxQty}</td>
+                        <td className="p-3 text-center">
+                          <input
+                            type="number"
+                            min={0}
+                            max={item.maxQty}
+                            value={item.qty}
+                            onChange={(e) => handleQtyChange(idx, parseInt(e.target.value) || 0)}
+                            className="w-16 border border-slate-200 rounded-[8px] p-1.5 text-center font-bold bg-white focus:outline-none focus:ring-1 focus:ring-rose-500"
+                          />
+                        </td>
+                        <td className="p-3 text-center">
+                          <select
+                            value={item.condition}
+                            onChange={(e) => handleConditionChange(idx, e.target.value)}
+                            className="bg-white border border-slate-200 rounded-[8px] p-1.5 font-bold focus:outline-none focus:ring-1 focus:ring-rose-500 text-xs"
+                          >
+                            <option value="Layak Jual">Layak Jual</option>
+                            <option value="Karantina">Karantina</option>
+                            <option value="Rusak">Rusak</option>
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-black text-slate-700 uppercase tracking-wider">Alasan Retur</label>
+                <input
+                  type="text"
+                  placeholder="Masukkan alasan retur barang..."
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  className="w-full border border-slate-200 rounded-[12px] p-3 text-sm font-bold bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/30 transition-all"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-2">
+                <button
+                  onClick={() => setIsReturnModalOpen(false)}
+                  className="bg-white border border-slate-200 text-slate-700 rounded-[12px] px-5 py-3 text-sm font-bold hover:bg-slate-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSubmitReturn}
+                  disabled={isSubmittingReturn}
+                  className="bg-gradient-to-br from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white rounded-[12px] px-6 py-3 text-sm font-black shadow-lg shadow-rose-500/20 border-0 transition-all flex items-center"
+                >
+                  {isSubmittingReturn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Proses Retur
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

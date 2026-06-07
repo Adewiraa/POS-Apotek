@@ -1,4 +1,8 @@
 import { apiClient } from "../api-client";
+import type {
+  DashboardMetricsResponse,
+  SearchResponse,
+} from "@/types/api";
 
 // ==========================================
 // 0. AUTHENTICATION
@@ -40,6 +44,18 @@ export const PosAPI = {
     authorizer_id: number;
     void_reason: string;
   }) => apiClient.post("/pos/void", data).then(res => res.data),
+
+  salesReturn: (data: {
+    transaction_no: string;
+    user_id: number;
+    reason: string;
+    items: {
+      product_id: number;
+      product_batch_id: number;
+      qty: number;
+      condition: "Layak Jual" | "Karantina" | "Rusak";
+    }[];
+  }) => apiClient.post("/pos/returns", data).then(res => res.data),
 };
 
 // ==========================================
@@ -71,4 +87,24 @@ export const ProcurementAPI = {
   
   receiveGoods: (data: any) => 
     apiClient.post("/procurement/receive-goods", data).then(res => res.data),
+};
+
+// ==========================================
+// 6. DASHBOARD METRICS
+// GET /api/dashboard/metrics
+// ==========================================
+export const DashboardAPI = {
+  getMetrics: (): Promise<DashboardMetricsResponse> =>
+    apiClient.get("/dashboard/metrics").then(res => res.data),
+};
+
+// ==========================================
+// 7. GLOBAL SEARCH
+// GET /api/search?q=keyword&limit=5
+// ==========================================
+export const SearchAPI = {
+  global: (q: string, limit = 5): Promise<SearchResponse> =>
+    apiClient
+      .get("/search", { params: { q, limit } })
+      .then(res => res.data),
 };
