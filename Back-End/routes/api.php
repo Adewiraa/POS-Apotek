@@ -3,19 +3,25 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\DashboardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
+// Global Search
+Route::get('/search', [SearchController::class, 'global']);
+
 // Dashboard Metrics
-Route::get('/dashboard/metrics', [\App\Http\Controllers\Api\DashboardController::class, 'getMetrics']);
+Route::get('/dashboard/metrics', [DashboardController::class, 'getMetrics']);
 
 // Route Endpoint Transaksi Kasir
 Route::prefix('pos')->group(function () {
     Route::post('/checkout', [\App\Http\Controllers\Api\CheckoutController::class, 'store']);
     Route::post('/hold', [\App\Http\Controllers\Api\CheckoutController::class, 'hold']);
     Route::post('/void', [\App\Http\Controllers\Api\CheckoutController::class, 'voidTransaction']);
+    Route::post('/returns', [\App\Http\Controllers\Api\SalesReturnController::class, 'store']);
 });
 
 // Master Data CRUD

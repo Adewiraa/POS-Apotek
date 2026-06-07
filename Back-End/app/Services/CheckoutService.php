@@ -14,14 +14,40 @@ class CheckoutService
     /**
      * Process a POS checkout transaction with atomic database operation.
      */
-    public function processCheckout(array $cartItems, int $cashierId, string $paymentMethod, float $total, float $discount = 0, float $tax = 0)
+    public function processCheckout(array $cartItems, int $cashierId, string $paymentMethod, float $total, float $discount = 0, float $tax = 0, ?int $prescriptionId = null)
     {
-        return DB::transaction(function () use ($cartItems, $cashierId, $paymentMethod, $total, $discount, $tax) {
+        return DB::transaction(function () use ($cartItems, $cashierId, $paymentMethod, $total, $discount, $tax, $prescriptionId) {
             
-            // 1. Create Sale Header
+            // 1. Validasi Resep jika ada item dengan klasifikasi "Obat Keras"
+            $hasObatKeras = false;
+            foreach ($cartItems as $item) {
+                $product = \App\Models\Master\Product::find($item['product_id']);
+                if ($product && $product->classification === 'Obat Keras') {
+                    $hasObatKeras = true;
+                    break;
+                }
+            }
+
+            if ($hasObatKeras) {
+                if (empty($prescriptionId)) {
+                    throw new Exception("Transaksi mengandung Obat Keras. Validasi Resep Dokter diperlukan untuk melanjutkan.");
+                }
+
+                $prescription = \App\Models\Prescription\Prescription::find($prescriptionId);
+                if (!$prescription) {
+                    throw new Exception("Resep Dokter tidak ditemukan.");
+                }
+
+                if ($prescription->status !== 'Approved') {
+                    throw new Exception("Resep Dokter dengan nomor {$prescription->prescription_no} belum disetujui (Status saat ini: {$prescription->status}). Validasi APJ diperlukan.");
+                }
+            }
+
+            // 2. Create Sale Header
             $sale = Sale::create([
                 'transaction_no' => 'TRX-' . time(),
                 'cashier_id' => $cashierId,
+                'prescription_id' => $prescriptionId,
                 'subtotal' => $total - $tax + $discount, // Kalkulasi mundur untuk MVP
                 'discount' => $discount,
                 'tax' => $tax,
@@ -31,14 +57,15 @@ class CheckoutService
                 'payment_status' => 'Paid'
             ]);
 
-            // 2. Process Items and FEFO (First Expired First Out) Logic
+            // 3. Process Items and FEFO (First Expired First Out) Logic
             foreach ($cartItems as $item) {
                 $qtyNeeded = $item['qty'];
                 
-                // Get available batches ordered by ED closest to now
+                // Get available batches ordered by ED closest to now (harus belum expired)
                 $batches = ProductBatch::where('product_id', $item['product_id'])
                     ->where('status', 'Active')
                     ->where('qty_available', '>', 0)
+                    ->where('expired_date', '>', now()) // Mencegah batch expired terjual
                     ->orderBy('expired_date', 'asc')
                     ->lockForUpdate() // Prevent race conditions
                     ->get();
@@ -78,8 +105,15 @@ class CheckoutService
 
                 // If we still need qty after checking all batches, stock is insufficient
                 if ($qtyRemaining > 0) {
-                    throw new Exception("Stok tidak mencukupi untuk produk ID " . $item['product_id']);
+                    throw new Exception("Stok tidak mencukupi untuk produk ID " . $item['product_id'] . " (hanya batch aktif & belum kedaluwarsa yang dapat dijual)");
                 }
+            }
+
+            // 4. Update status resep menjadi Dispensed
+            if ($prescriptionId) {
+                \App\Models\Prescription\Prescription::where('id', $prescriptionId)->update([
+                    'status' => 'Dispensed'
+                ]);
             }
 
             return $sale;

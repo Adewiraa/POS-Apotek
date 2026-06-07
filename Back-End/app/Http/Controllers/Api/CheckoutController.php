@@ -18,11 +18,12 @@ class CheckoutController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi input (Sederhana untuk keperluan testing awal)
+        // Validasi input
         $request->validate([
             'cashier_id' => 'required|integer',
             'payment_method' => 'required|string',
             'total' => 'required|numeric',
+            'prescription_id' => 'nullable|integer|exists:prescriptions,id',
             'items' => 'required|array',
             'items.*.product_id' => 'required|integer|exists:products,id',
             'items.*.qty' => 'required|integer|min:1',
@@ -35,13 +36,16 @@ class CheckoutController extends Controller
                 $request->input('items'),
                 $request->input('cashier_id'),
                 $request->input('payment_method'),
-                $request->input('total')
+                $request->input('total'),
+                0, // discount default
+                0, // tax default
+                $request->input('prescription_id')
             );
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Transaksi berhasil diproses!',
-                'data' => $sale->load('items') // Memuat relasi item yang terjual
+                'data' => $sale->load(['items', 'prescription']) // Memuat relasi item dan resep
             ], 201);
 
         } catch (Exception $e) {

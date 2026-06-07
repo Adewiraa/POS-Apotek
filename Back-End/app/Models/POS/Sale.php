@@ -12,4 +12,9 @@ class Sale extends Model
     {
         return $this->hasMany(SaleItem::class);
     }
+
+    public function prescription()
+    {
+        return $this->belongsTo(\App\Models\Prescription\Prescription::class);
+    }
 }
