@@ -416,14 +416,15 @@ export default function POSPage() {
       <div className={styles.rightPanel}>
         {/* Validasi Resep Dokter */}
         <div className={`${styles.rxCard} glass-panel`}>
-          <div className={styles.rxToggleRow}>
-            <label className={styles.switchLabel}>
+          <div className={styles.rxToggleRow} style={{ justifyContent: 'space-between', width: '100%' }}>
+            <span className={styles.checkboxTitle}>📋 Validasi Resep Dokter</span>
+            <label className={styles.switch}>
               <input
                 type="checkbox"
                 checked={usePrescription}
                 onChange={(e) => setUsePrescription(e.target.checked)}
               />
-              <span className={styles.checkboxTitle}>📋 Menggunakan Resep Dokter</span>
+              <span className={styles.slider}></span>
             </label>
           </div>
 
@@ -435,7 +436,7 @@ export default function POSPage() {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="dr. Smith"
+                    placeholder="Contoh: dr. Jaka"
                     value={doctorName}
                     onChange={(e) => setDoctorName(e.target.value)}
                     required
@@ -446,7 +447,7 @@ export default function POSPage() {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="SIP/123/2026"
+                    placeholder="Contoh: SIP/123/VIII/2026"
                     value={doctorSip}
                     onChange={(e) => setDoctorSip(e.target.value)}
                   />
@@ -459,7 +460,7 @@ export default function POSPage() {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="Budi"
+                    placeholder="Contoh: Budi Prasetyo"
                     value={patientName}
                     onChange={(e) => setPatientName(e.target.value)}
                     required
@@ -470,7 +471,7 @@ export default function POSPage() {
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="0812xxxx"
+                    placeholder="Contoh: 08123456789"
                     value={patientPhone}
                     onChange={(e) => setPatientPhone(e.target.value)}
                   />
@@ -478,12 +479,19 @@ export default function POSPage() {
               </div>
 
               <div className={styles.formGroup}>
-                <label>Foto/Scan Resep Dokter</label>
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setPrescriptionFile(e.target.files ? e.target.files[0] : null)}
-                />
+                <label>Foto/Scan Dokumen Resep</label>
+                <div className={styles.fileUploadArea}>
+                  <input
+                    id="rx-upload"
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => setPrescriptionFile(e.target.files ? e.target.files[0] : null)}
+                    className={styles.fileInputHidden}
+                  />
+                  <div className={styles.uploadLabel}>
+                    <span>{prescriptionFile ? `📄 ${prescriptionFile.name}` : '📁 Klik untuk Unggah / Tarik File Resep'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           )}
