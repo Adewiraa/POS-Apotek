@@ -1,0 +1,438 @@
+.posContainer {
+  display: grid;
+  grid-template-columns: 1.5fr 1.1fr;
+  gap: 24px;
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.05), transparent 40%),
+              #0b0f17;
+  padding: 24px;
+}
+
+.leftPanel, .rightPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+}
+
+.panelHeader h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.invoiceNo {
+  font-family: monospace;
+  background: var(--bg-card-hover);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--primary);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Search Box Overlay */
+.searchBox {
+  position: relative;
+  padding: 16px;
+  border-radius: var(--radius-md);
+}
+
+.searchResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-top: 8px;
+  z-index: 100;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.resultItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.resultItem:hover {
+  background: var(--bg-card-hover);
+}
+
+.resultItem:last-child {
+  border-bottom: none;
+}
+
+.batchLabel {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.resultMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.price {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--primary);
+}
+
+.stock {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.noResult {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Cart Wrapper */
+.cartWrapper {
+  padding: 24px;
+  border-radius: var(--radius-md);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 350px;
+}
+
+.cartList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 400px;
+  padding-right: 4px;
+}
+
+.emptyCart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.cartItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  gap: 16px;
+}
+
+.cartItemInfo {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cartItemInfo h4 {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cartItemInfo span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.itemCategory {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.keras {
+  color: var(--error);
+}
+
+.cartItemQty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qtyBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.qtyBtn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--text-muted);
+}
+
+.qtyVal {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+}
+
+.cartItemPrice {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Prescription Card */
+.rxCard {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.rxToggleRow {
+  display: flex;
+  align-items: center;
+}
+
+.switchLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkboxTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rxForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Bill Card */
+.billCard {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.billRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.billFormRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.billInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.billInputGroup label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.totalRow {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Payment Card */
+.paymentCard {
+  padding: 24px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.paymentInputGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+}
+
+.paymentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-input);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.paymentRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.payMethod {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.payRef {
+  font-size: 11px;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+.payAmount {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.removePayBtn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.paymentStatusRow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 0;
+}
+
+.statusKurang {
+  color: var(--error);
+  font-size: 14px;
+}
+
+.statusKembalian {
+  color: var(--success);
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .posContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Print Ticket Styling */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .cartWrapper, .cartWrapper * {
+    visibility: visible;
+  }
+  
+  .cartWrapper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 300px; /* Lebar thermal printer 80mm */
+    border: none !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    padding: 0;
+  }
+  
+  .cartList {
+    max-height: none !important;
+  }
+  
+  .cartItem {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px dashed black !important;
+    color: black !important;
+    padding: 8px 0 !important;
+  }
+  
+  .cartItemInfo h4, .cartItemInfo span, .cartItemPrice {
+    color: black !important;
+  }
+  
+  .qtyBtn, .panelHeader, .leftPanel, .rightPanel {
+    display: none !important;
+  }
+}
