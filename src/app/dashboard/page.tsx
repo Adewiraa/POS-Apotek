@@ -201,29 +201,39 @@ export default function DashboardPage() {
         <section className={styles.navSection}>
           <h3>Akses Cepat Fitur</h3>
           <div className={styles.menuGrid}>
+            {/* Layar Kasir: Diakses oleh semua role */}
             <div onClick={() => router.push('/pos')} className={`${styles.menuCard} glass-panel`}>
               <span className={styles.menuIcon}>🛒</span>
               <h4>Layar Kasir (POS)</h4>
               <p>Mulai transaksi penjualan baru, multi-payment, dan input resep dokter.</p>
             </div>
 
-            <div onClick={() => router.push('/inventory')} className={`${styles.menuCard} glass-panel`}>
-              <span className={styles.menuIcon}>📦</span>
-              <h4>Gudang &amp; Inventaris</h4>
-              <p>Kelola master data obat, no. batch, restock FEFO, dan penyesuaian stok.</p>
-            </div>
+            {/* Gudang & Inventaris: Hanya Admin & Apoteker */}
+            {(session?.role === 'admin' || session?.role === 'pharmacist') && (
+              <div onClick={() => router.push('/inventory')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>📦</span>
+                <h4>Gudang &amp; Inventaris</h4>
+                <p>Kelola master data obat, no. batch, restock FEFO, dan penyesuaian stok.</p>
+              </div>
+            )}
 
-            <div onClick={() => router.push('/controlled-logs')} className={`${styles.menuCard} glass-panel`}>
-              <span className={styles.menuIcon}>📝</span>
-              <h4>Register Narkotika &amp; Psikotropika</h4>
-              <p>Buku log pengeluaran obat psikotropika wajib BPOM &amp; Kemenkes RI.</p>
-            </div>
+            {/* Register Narkotika & Psikotropika: Hanya Admin & Apoteker */}
+            {(session?.role === 'admin' || session?.role === 'pharmacist') && (
+              <div onClick={() => router.push('/controlled-logs')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>📝</span>
+                <h4>Register Narkotika &amp; Psikotropika</h4>
+                <p>Buku log pengeluaran obat psikotropika wajib BPOM &amp; Kemenkes RI.</p>
+              </div>
+            )}
 
-            <div onClick={() => router.push('/reports')} className={`${styles.menuCard} glass-panel`}>
-              <span className={styles.menuIcon}>📊</span>
-              <h4>Laporan &amp; Analitik</h4>
-              <p>Grafik penjualan harian, barang terlaris, laba-rugi, dan histori transaksi.</p>
-            </div>
+            {/* Laporan & Analitik: Hanya Admin */}
+            {session?.role === 'admin' && (
+              <div onClick={() => router.push('/reports')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>📊</span>
+                <h4>Laporan &amp; Analitik</h4>
+                <p>Grafik penjualan harian, barang terlaris, laba-rugi, dan histori transaksi.</p>
+              </div>
+            )}
           </div>
         </section>
       </main>
