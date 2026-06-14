@@ -137,22 +137,7 @@ export default function BatchesPage() {
       setStock('');
       alert('Batch obat baru berhasil dicatat!');
     } catch (err: any) {
-      console.warn('Gagal menyimpan batch ke Supabase (simulasi lokal):', err.message);
-      // Fallback lokal untuk demo
-      const selectedDrug = drugs.find(d => d.id === selectedDrugId);
-      const mockBatch: Batch = {
-        id: `mock-batch-${Date.now()}`,
-        ...newBatchData,
-        drug: { name: selectedDrug?.name || 'Obat Demo' }
-      };
-      setBatches(prev => [...prev, mockBatch].sort((a, b) => a.expiry_date.localeCompare(b.expiry_date)));
-      
-      // Reset Form
-      setBatchNumber('');
-      setExpiryDate('');
-      setPurchasePrice('');
-      setSellingPrice('');
-      setStock('');
+      alert(`Gagal menyimpan ke Supabase: ${err.message}. Harap periksa kembali relasi database Anda.`);
     } finally {
       setSubmitting(false);
     }

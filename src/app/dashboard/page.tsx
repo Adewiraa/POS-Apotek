@@ -16,27 +16,39 @@ export default function DashboardPage() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Live Stats
+  const [todaySales, setTodaySales] = useState(0);
+  const [prescriptionCount, setPrescriptionCount] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [expiryCount, setExpiryCount] = useState(0);
+
   useEffect(() => {
-    // Periksa sesi
     const checkUser = async () => {
       const demoSession = localStorage.getItem('demo_session');
       const { data: { session: supabaseSession } } = await supabase.auth.getSession();
 
+      let activeSession: UserSession | null = null;
+
       if (demoSession) {
-        setSession(JSON.parse(demoSession));
+        activeSession = JSON.parse(demoSession);
       } else if (supabaseSession) {
-        // Tarik profil dari Supabase
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', supabaseSession.user.id)
           .single();
 
-        setSession({
+        activeSession = {
           user: { id: supabaseSession.user.id, email: supabaseSession.user.email || '' },
           role: (profile?.role as any) || 'cashier',
           name: profile?.full_name || supabaseSession.user.email || 'Staf',
-        });
+        };
+      }
+
+      if (activeSession) {
+        setSession(activeSession);
+        // Tarik data statistik riil dari database
+        fetchStats();
       } else {
         router.push('/login');
       }
@@ -45,6 +57,57 @@ export default function DashboardPage() {
 
     checkUser();
   }, [router]);
+
+  const fetchStats = async () => {
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayStartStr = todayStart.toISOString();
+
+      // 1. Omset Hari Ini
+      const { data: sales } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .gte('created_at', todayStartStr);
+      
+      const salesSum = sales?.reduce((sum, item) => sum + Number(item.total_amount), 0) || 0;
+      setTodaySales(salesSum);
+
+      // 2. Jumlah Resep Hari Ini
+      const { count: rxCount } = await supabase
+        .from('sales')
+        .select('*', { count: 'exact', head: true })
+        .not('prescription_id', 'is', null)
+        .gte('created_at', todayStartStr);
+      
+      setPrescriptionCount(rxCount || 0);
+
+      // 3. Stok Menipis (Batch dengan stok <= 10)
+      const { count: lowCount } = await supabase
+        .from('drug_batches')
+        .select('*', { count: 'exact', head: true })
+        .lte('stock', 10)
+        .gt('stock', 0);
+      
+      setLowStockCount(lowCount || 0);
+
+      // 4. Hampir Kedaluwarsa (< 3 Bulan)
+      const threeMonthsOut = new Date();
+      threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3);
+      const threeMonthsOutStr = threeMonthsOut.toISOString().split('T')[0];
+
+      const { count: expCount } = await supabase
+        .from('drug_batches')
+        .select('*', { count: 'exact', head: true })
+        .lte('expiry_date', threeMonthsOutStr)
+        .gt('stock', 0);
+
+      setExpiryCount(expCount || 0);
+
+    } catch (err) {
+      console.error('Error fetching live stats:', err);
+    }
+  };
 
   const handleLogout = async () => {
     localStorage.removeItem('demo_session');
@@ -67,6 +130,10 @@ export default function DashboardPage() {
     cashier: 'Kasir',
   };
 
+  const formatRupiah = (num: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+  };
+
   return (
     <div className={styles.container}>
       {/* Sidebar / Top Nav */}
@@ -74,8 +141,8 @@ export default function DashboardPage() {
         <div className={styles.brand}>
           <span className={styles.logo}>💊</span>
           <div>
-            <h2>Apotek Modern</h2>
-            <span className={styles.badge}>POS System</span>
+            <h2>ApoGo</h2>
+            <span className={styles.badge}>Sistem POS Apotek</span>
           </div>
         </div>
         <div className={styles.userInfo}>
@@ -97,8 +164,8 @@ export default function DashboardPage() {
             <div className={styles.statIcon} style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>💵</div>
             <div className={styles.statInfo}>
               <span className={styles.statLabel}>Omset Hari Ini</span>
-              <h3>Rp 2.450.000</h3>
-              <p className={styles.statSub}>+12% dibanding kemarin</p>
+              <h3>{formatRupiah(todaySales)}</h3>
+              <p className={styles.statSub}>Berdasarkan transaksi kasir</p>
             </div>
           </div>
 
@@ -106,8 +173,8 @@ export default function DashboardPage() {
             <div className={styles.statIcon} style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1' }}>📄</div>
             <div className={styles.statInfo}>
               <span className={styles.statLabel}>Resep Diproses</span>
-              <h3>18 Resep</h3>
-              <p className={styles.statSub}>Semua resep valid</p>
+              <h3>{prescriptionCount} Resep</h3>
+              <p className={styles.statSub}>Faktur resep hari ini</p>
             </div>
           </div>
 
@@ -115,8 +182,8 @@ export default function DashboardPage() {
             <div className={styles.statIcon} style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>⚠️</div>
             <div className={styles.statInfo}>
               <span className={styles.statLabel}>Stok Menipis</span>
-              <h3>4 Item</h3>
-              <p className={styles.statSub} style={{ color: '#f59e0b' }}>Segera buat PO supplier</p>
+              <h3>{lowStockCount} Item</h3>
+              <p className={styles.statSub} style={{ color: '#f59e0b' }}>Batch dengan stok &le; 10</p>
             </div>
           </div>
 
@@ -124,7 +191,7 @@ export default function DashboardPage() {
             <div className={styles.statIcon} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>⏳</div>
             <div className={styles.statInfo}>
               <span className={styles.statLabel}>Hampir Kedaluwarsa</span>
-              <h3>2 Batch</h3>
+              <h3>{expiryCount} Batch</h3>
               <p className={styles.statSub} style={{ color: '#ef4444' }}>Batas waktu &lt; 3 bulan</p>
             </div>
           </div>

@@ -80,39 +80,11 @@ export default function ReportsPage() {
         setInvoiceCount(mapped.length);
 
       } else {
-        // Fallback mock data jika database kosong
-        const mockSales: Sale[] = [
-          {
-            id: 's1',
-            invoice_number: 'INV-20260614-9920',
-            total_amount: 57500,
-            discount: 10000,
-            tax: 2500,
-            created_at: new Date().toISOString(),
-            profile: { full_name: 'Kasir Rina' },
-            payments: [
-              { payment_method: 'insurance', amount: 40000 },
-              { payment_method: 'qris', amount: 17500 }
-            ]
-          },
-          {
-            id: 's2',
-            invoice_number: 'INV-20260614-7261',
-            total_amount: 15000,
-            discount: 0,
-            tax: 0,
-            created_at: new Date(Date.now() - 3600000).toISOString(),
-            profile: { full_name: 'Kasir Rina' },
-            payments: [
-              { payment_method: 'cash', amount: 15000 }
-            ]
-          }
-        ];
-        setSales(mockSales);
-        setTotalRevenue(72500);
-        setTotalDiscount(10000);
-        setTotalTax(2500);
-        setInvoiceCount(2);
+        setSales([]);
+        setTotalRevenue(0);
+        setTotalDiscount(0);
+        setTotalTax(0);
+        setInvoiceCount(0);
       }
     } catch (err) {
       console.error('Error fetching sales report:', err);

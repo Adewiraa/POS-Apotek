@@ -111,12 +111,7 @@ export default function POSPage() {
         }));
         setBatches(mapped);
       } else {
-        // Fallback mock data jika database kosong
-        setBatches([
-          { id: 'b1', drug_id: 'd1', batch_number: 'B-PRC-01', expiry_date: '2027-12-01', selling_price: 15000, stock: 120, name: 'Paracetamol 500mg', category: 'Obat Bebas', unit: 'Tablet' },
-          { id: 'b2', drug_id: 'd2', batch_number: 'B-AMX-02', expiry_date: '2026-09-15', selling_price: 25000, stock: 50, name: 'Amoxicillin 500mg', category: 'Obat Keras', unit: 'Tablet' },
-          { id: 'b3', drug_id: 'd3', batch_number: 'B-ALP-03', expiry_date: '2026-10-20', selling_price: 45000, stock: 15, name: 'Alprazolam 0.5mg', category: 'Psikotropika', unit: 'Tablet' },
-        ]);
+        setBatches([]);
       }
     } catch (err) {
       console.error('Error fetching active stock:', err);

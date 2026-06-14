@@ -69,35 +69,7 @@ export default function ControlledLogsPage() {
         }));
         setLogs(mapped);
       } else {
-        // Fallback mock data jika kosong
-        setLogs([
-          {
-            id: 'l1',
-            drug_id: 'd3',
-            batch_id: 'b3',
-            user_id: 'u1',
-            type: 'out',
-            quantity: 2,
-            notes: 'Penjualan resep via invoice INV-20260614-4112',
-            created_at: new Date().toISOString(),
-            drug: { name: 'Alprazolam 0.5mg', unit: 'Tablet' },
-            batch: { batch_number: 'B-ALP-03' },
-            profile: { full_name: 'Apoteker Jaka' }
-          },
-          {
-            id: 'l2',
-            drug_id: 'd3',
-            batch_id: 'b3',
-            user_id: 'u1',
-            type: 'in',
-            quantity: 15,
-            notes: 'Stok masuk awal dari PO-Supplier',
-            created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-            drug: { name: 'Alprazolam 0.5mg', unit: 'Tablet' },
-            batch: { batch_number: 'B-ALP-03' },
-            profile: { full_name: 'Ade Wiramiharja (Admin)' }
-          }
-        ]);
+        setLogs([]);
       }
     } catch (err) {
       console.error('Error fetching controlled logs:', err);

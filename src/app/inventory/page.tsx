@@ -46,16 +46,12 @@ export default function DrugsPage() {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
+      if (data) {
         setDrugs(data);
-      } else {
-        // Jika database kosong, gunakan mock data di state
-        setDrugs(INITIAL_MOCK_DRUGS.map((d, index) => ({ ...d, id: `mock-${index}` })));
       }
     } catch (err) {
       console.error('Error fetching drugs:', err);
-      // Fallback ke mock data jika gagal
-      setDrugs(INITIAL_MOCK_DRUGS.map((d, index) => ({ ...d, id: `mock-${index}` })));
+      setDrugs([]);
     } finally {
       setLoading(false);
     }
