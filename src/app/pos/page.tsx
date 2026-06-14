@@ -61,11 +61,20 @@ export default function POSPage() {
     return new Intl.NumberFormat('id-ID').format(Number(clean));
   };
 
-  // Multi-Payment states
+  // Multi-Payment states (Split Payment)
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [currentMethod, setCurrentMethod] = useState<'cash' | 'qris' | 'card' | 'insurance'>('cash');
   const [currentAmount, setCurrentAmount] = useState('');
   const [currentRef, setCurrentRef] = useState('');
+
+  // Single-Payment states (Premium Direct Flow)
+  const [isSplitPayment, setIsSplitPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris' | 'card' | 'insurance'>('cash');
+  const [cashReceived, setCashReceived] = useState('');
+  const [cardBankName, setCardBankName] = useState('');
+  const [cardTxRef, setCardTxRef] = useState('');
+  const [insuranceProvider, setInsuranceProvider] = useState('');
+  const [insurancePolicyNum, setInsurancePolicyNum] = useState('');
 
   // 1. Generate Invoice Number & Fetch Active Batches
   const generateInvoice = () => {
@@ -233,8 +242,15 @@ export default function POSPage() {
 
   const totalAmount = Math.max(0, subtotal - discount + tax);
 
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const balanceDue = totalAmount - totalPaid;
+  const totalPaid = isSplitPayment
+    ? payments.reduce((sum, p) => sum + p.amount, 0)
+    : (paymentMethod === 'cash' ? Math.min(totalAmount, Number(cashReceived.replace(/\D/g, ''))) : totalAmount);
+
+  const balanceDue = Math.max(0, totalAmount - totalPaid);
+
+  const cashChange = !isSplitPayment && paymentMethod === 'cash'
+    ? Math.max(0, Number(cashReceived.replace(/\D/g, '')) - totalAmount)
+    : (isSplitPayment ? (payments.some(p => p.payment_method === 'cash') && totalPaid > totalAmount ? totalPaid - totalAmount : 0) : 0);
 
   // 4. Manage Payments List
   const handleAddPayment = () => {
@@ -368,6 +384,38 @@ export default function POSPage() {
         prescription_id = rx?.id;
       }
 
+      // Siapkan data pembayaran berdasarkan mode
+      let checkoutPayments: PaymentEntry[] = [];
+      if (isSplitPayment) {
+        checkoutPayments = payments;
+      } else {
+        if (paymentMethod === 'cash') {
+          checkoutPayments = [{
+            payment_method: 'cash',
+            amount: totalAmount,
+            reference_number: 'Tunai'
+          }];
+        } else if (paymentMethod === 'qris') {
+          checkoutPayments = [{
+            payment_method: 'qris',
+            amount: totalAmount,
+            reference_number: `QRIS-${invoiceNumber}`
+          }];
+        } else if (paymentMethod === 'card') {
+          checkoutPayments = [{
+            payment_method: 'card',
+            amount: totalAmount,
+            reference_number: `${cardBankName || 'Debit/Kredit'}${cardTxRef ? ` - Ref: ${cardTxRef}` : ''}`
+          }];
+        } else if (paymentMethod === 'insurance') {
+          checkoutPayments = [{
+            payment_method: 'insurance',
+            amount: totalAmount,
+            reference_number: `${insuranceProvider || 'Asuransi'}${insurancePolicyNum ? ` - Polis: ${insurancePolicyNum}` : ''}`
+          }];
+        }
+      }
+
       // Kirim payload checkout ke API Route
       const response = await fetch('/api/checkout', {
         method: 'POST',
@@ -378,7 +426,7 @@ export default function POSPage() {
           discount,
           tax,
           items: cart,
-          payments: payments
+          payments: checkoutPayments
         })
       });
 
@@ -407,6 +455,11 @@ export default function POSPage() {
       setPatientName('');
       setPatientPhone('');
       setPrescriptionFile(null);
+      setCashReceived('');
+      setCardBankName('');
+      setCardTxRef('');
+      setInsuranceProvider('');
+      setInsurancePolicyNum('');
       generateInvoice();
       fetchActiveBatches();
 
@@ -632,77 +685,258 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Kalkulator Multi-Payment (Split Payment) */}
+        {/* Kalkulator Pembayaran Premium */}
         <div className={`${styles.paymentCard} glass-panel`}>
-          <h3>Pembayaran Multi-Payment</h3>
-          
-          <div className={styles.paymentInputGrid}>
-            <select
-              className="input-field"
-              value={currentMethod}
-              onChange={(e) => setCurrentMethod(e.target.value as any)}
-            >
-              <option value="cash">💵 Tunai</option>
-              <option value="qris">📱 QRIS</option>
-              <option value="card">💳 Debit/Kredit</option>
-              <option value="insurance">🛡️ Asuransi / BPJS</option>
-            </select>
+          <h3>Metode Pembayaran</h3>
 
-            <input
-              type="text"
-              className="input-field"
-              placeholder="Jumlah Uang"
-              value={currentAmount}
-              onChange={(e) => setCurrentAmount(formatInputRupiah(e.target.value))}
-            />
+          {!isSplitPayment ? (
+            /* Mode Single-Payment (Cepat & Premium) */
+            <div>
+              <div className={styles.paymentMethodsRow}>
+                <button
+                  type="button"
+                  className={`${styles.methodBtn} ${paymentMethod === 'cash' ? styles.activeMethod : ''}`}
+                  onClick={() => setPaymentMethod('cash')}
+                >
+                  <span className={styles.methodIcon}>💵</span>
+                  <span className={styles.methodLabel}>Tunai</span>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.methodBtn} ${paymentMethod === 'qris' ? styles.activeMethod : ''}`}
+                  onClick={() => setPaymentMethod('qris')}
+                >
+                  <span className={styles.methodIcon}>📱</span>
+                  <span className={styles.methodLabel}>QRIS</span>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.methodBtn} ${paymentMethod === 'card' ? styles.activeMethod : ''}`}
+                  onClick={() => setPaymentMethod('card')}
+                >
+                  <span className={styles.methodIcon}>💳</span>
+                  <span className={styles.methodLabel}>Kartu</span>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.methodBtn} ${paymentMethod === 'insurance' ? styles.activeMethod : ''}`}
+                  onClick={() => setPaymentMethod('insurance')}
+                >
+                  <span className={styles.methodIcon}>🛡️</span>
+                  <span className={styles.methodLabel}>Asuransi</span>
+                </button>
+              </div>
 
-            <input
-              type="text"
-              className="input-field"
-              placeholder="No. Referensi (Opsional)"
-              value={currentRef}
-              onChange={(e) => setCurrentRef(e.target.value)}
-            />
+              {/* Rincian Input Form Berdasarkan Metode */}
+              {paymentMethod === 'cash' && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', marginBottom: '6px', display: 'block' }}>
+                    Uang Diterima (Rp)
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Masukkan jumlah uang..."
+                    value={cashReceived}
+                    onChange={(e) => setCashReceived(formatInputRupiah(e.target.value))}
+                  />
+                  <div className={styles.quickCashGrid}>
+                    <button
+                      type="button"
+                      className={styles.quickCashBtn}
+                      onClick={() => setCashReceived(formatInputRupiah(String(totalAmount)))}
+                    >
+                      Uang Pas
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickCashBtn}
+                      onClick={() => setCashReceived(formatInputRupiah(String(Math.ceil(totalAmount / 10000) * 10000)))}
+                    >
+                      Pecahan Terdekat
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickCashBtn}
+                      onClick={() => setCashReceived(formatInputRupiah(String(50000)))}
+                    >
+                      50.000
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.quickCashBtn}
+                      onClick={() => setCashReceived(formatInputRupiah(String(100000)))}
+                    >
+                      100.000
+                    </button>
+                  </div>
 
-            <button onClick={handleAddPayment} className="btn btn-secondary" style={{ gridColumn: 'span 3' }}>
-              ➕ Tambah Metode Pembayaran
-            </button>
-          </div>
-
-          {/* List Pembayaran yang Dimasukkan */}
-          {payments.length > 0 && (
-            <div className={styles.paymentList}>
-              {payments.map((p, idx) => (
-                <div key={idx} className={styles.paymentRow}>
-                  <span className={styles.payMethod}>
-                    {p.payment_method.toUpperCase()} 
-                    {p.reference_number && <span className={styles.payRef}> ({p.reference_number})</span>}
-                  </span>
-                  <span className={styles.payAmount}>{formatRupiah(p.amount)}</span>
-                  <button onClick={() => handleRemovePayment(idx)} className={styles.removePayBtn}>❌</button>
+                  <div className={styles.paymentStatusRow} style={{ marginTop: '16px' }}>
+                    <div className={styles.statusKembalian}>
+                      Kembalian: <strong>{formatRupiah(cashChange)}</strong>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {paymentMethod === 'qris' && (
+                <div className={styles.qrisBox} style={{ marginBottom: '16px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--primary)' }}>QRIS DINAMIS APOGO</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=ApoGo-INV-${invoiceNumber}`}
+                    alt="QRIS Barcode"
+                    className={styles.qrisQr}
+                    width={160}
+                    height={160}
+                  />
+                  <div className={styles.qrisStatus}>
+                    <div className={styles.pulsingDot}></div>
+                    <span>Menunggu scan pembayaran dari pelanggan...</span>
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'card' && (
+                <div className={styles.premiumForm} style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Nama Bank</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="BCA, Mandiri, dll."
+                      value={cardBankName}
+                      onChange={(e) => setCardBankName(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600' }}>No. Ref / Kartu</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="4 Digit Terakhir / Ref"
+                      value={cardTxRef}
+                      onChange={(e) => setCardTxRef(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'insurance' && (
+                <div className={styles.premiumForm} style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600' }}>Provider Asuransi</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="BPJS, Inhealth, Prudential"
+                      value={insuranceProvider}
+                      onChange={(e) => setInsuranceProvider(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: '600' }}>No. Polis / Kartu</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Nomor kartu asuransi..."
+                      value={insurancePolicyNum}
+                      onChange={(e) => setInsurancePolicyNum(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Mode Multi-Payment / Split (Untuk kebutuhan khusus) */
+            <div>
+              <div className={styles.paymentInputGrid}>
+                <select
+                  className="input-field"
+                  value={currentMethod}
+                  onChange={(e) => setCurrentMethod(e.target.value as any)}
+                >
+                  <option value="cash">💵 Tunai</option>
+                  <option value="qris">📱 QRIS</option>
+                  <option value="card">💳 Debit/Kredit</option>
+                  <option value="insurance">🛡️ Asuransi / BPJS</option>
+                </select>
+
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Jumlah Uang"
+                  value={currentAmount}
+                  onChange={(e) => setCurrentAmount(formatInputRupiah(e.target.value))}
+                />
+
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="No. Referensi (Opsional)"
+                  value={currentRef}
+                  onChange={(e) => setCurrentRef(e.target.value)}
+                />
+
+                <button onClick={handleAddPayment} className="btn btn-secondary" style={{ gridColumn: 'span 3' }}>
+                  ➕ Tambah Metode Pembayaran
+                </button>
+              </div>
+
+              {/* List Pembayaran yang Dimasukkan */}
+              {payments.length > 0 && (
+                <div className={styles.paymentList} style={{ marginTop: '12px' }}>
+                  {payments.map((p, idx) => (
+                    <div key={idx} className={styles.paymentRow}>
+                      <span className={styles.payMethod}>
+                        {p.payment_method.toUpperCase()}
+                        {p.reference_number && <span className={styles.payRef}> ({p.reference_number})</span>}
+                      </span>
+                      <span className={styles.payAmount}>{formatRupiah(p.amount)}</span>
+                      <button type="button" onClick={() => handleRemovePayment(idx)} className={styles.removePayBtn}>❌</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Status Selisih Pembayaran */}
+              <div className={styles.paymentStatusRow} style={{ marginTop: '12px' }}>
+                {balanceDue > 0 ? (
+                  <div className={styles.statusKurang}>
+                    Kurang: <strong>{formatRupiah(balanceDue)}</strong>
+                  </div>
+                ) : (
+                  <div className={styles.statusKembalian}>
+                    Kembalian: <strong>{formatRupiah(cashChange)}</strong>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Status Selisih Pembayaran */}
-          <div className={styles.paymentStatusRow}>
-            {balanceDue > 0 ? (
-              <div className={styles.statusKurang}>
-                Kurang: <strong>{formatRupiah(balanceDue)}</strong>
-              </div>
-            ) : (
-              <div className={styles.statusKembalian}>
-                Kembalian: <strong>{formatRupiah(Math.abs(balanceDue))}</strong>
-              </div>
-            )}
+          {/* Toggle Split Payment Mode */}
+          <div className={styles.splitPaymentToggleRow}>
+            <span>Bagi Pembayaran (Split Payment)</span>
+            <label className={styles.switch}>
+              <input
+                type="checkbox"
+                checked={isSplitPayment}
+                onChange={(e) => setIsSplitPayment(e.target.checked)}
+              />
+              <span className={`${styles.slider} ${styles.round}`}></span>
+            </label>
           </div>
 
           <button
             onClick={handleCheckout}
             className="btn btn-primary"
-            style={{ width: '100%', padding: '16px', fontSize: '16px', fontWeight: 'bold' }}
-            disabled={checkoutLoading || balanceDue > 0 || cart.length === 0}
+            style={{ width: '100%', padding: '16px', fontSize: '16px', fontWeight: 'bold', marginTop: '16px' }}
+            disabled={
+              checkoutLoading || 
+              cart.length === 0 || 
+              (isSplitPayment && balanceDue > 0) ||
+              (!isSplitPayment && paymentMethod === 'cash' && (!cashReceived || Number(cashReceived.replace(/\D/g, '')) < totalAmount))
+            }
           >
             {checkoutLoading ? 'Memproses Transaksi...' : 'SELESAIKAN TRANSAKSI (PRINT STRUK) 🖨️'}
           </button>
