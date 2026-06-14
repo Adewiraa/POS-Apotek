@@ -6,7 +6,7 @@
   padding: 24px;
   background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 40%),
               radial-gradient(circle at bottom left, rgba(13, 148, 136, 0.15), transparent 40%),
-              #0b0f17;
+              var(--bg-app);
   overflow-y: auto;
 }
 

@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: #0b0f17;
+  background: var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-body);
 }
