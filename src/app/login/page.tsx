@@ -43,21 +43,43 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = (role: 'admin' | 'pharmacist' | 'cashier') => {
+  const handleDemoLogin = async (role: 'admin' | 'pharmacist' | 'cashier') => {
     setLoading(true);
-    // Simulasikan cookie atau token demo untuk demo instan
-    localStorage.setItem('demo_session', JSON.stringify({
-      user: { id: `demo-${role}`, email: `${role}@demo.com` },
-      role: role,
-      name: role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina'
-    }));
+    setError(null);
+    try {
+      const email = role === 'admin' 
+        ? 'admin@demo.com' 
+        : 'kasir@demo.com';
 
-    // Simpan ke cookie agar Next.js middleware bisa membaca role untuk RBAC
-    document.cookie = `demo_role=${role}; path=/; max-age=86400`;
-    
-    setTimeout(() => {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'password123',
+      });
+
+      if (authError) throw authError;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', data.user?.id)
+        .single();
+
+      const userRole = role; // Tetap gunakan role yang diminta untuk RBAC demo
+      const userName = role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina';
+
+      localStorage.setItem('demo_session', JSON.stringify({
+        user: { id: data.user?.id, email: data.user?.email },
+        role: userRole,
+        name: userName
+      }));
+
+      document.cookie = `demo_role=${userRole}; path=/; max-age=86400`;
       router.push('/dashboard');
-    }, 800);
+    } catch (err: any) {
+      setError(err.message || 'Gagal melakukan login demo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
