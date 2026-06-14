@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import styles from './pos.module.css';
+import Swal from 'sweetalert2';
 
 interface DrugBatchJoin {
   id: string;
@@ -132,7 +133,12 @@ export default function POSPage() {
     if (existingIndex > -1) {
       const updatedCart = [...cart];
       if (updatedCart[existingIndex].quantity >= batch.stock) {
-        alert('Stok batch aktif sudah mencapai batas maksimal.');
+        Swal.fire({
+          title: 'Stok Terbatas',
+          text: 'Stok batch aktif sudah mencapai batas maksimal.',
+          icon: 'warning',
+          confirmButtonColor: '#10b981'
+        });
         return;
       }
       updatedCart[existingIndex].quantity += 1;
@@ -162,7 +168,12 @@ export default function POSPage() {
       if (newQty <= 0) {
         updatedCart.splice(index, 1);
       } else if (newQty > match.stock) {
-        alert('Jumlah pembelian melebihi stok yang tersedia.');
+        Swal.fire({
+          title: 'Stok Tidak Cukup',
+          text: 'Jumlah pembelian melebihi stok yang tersedia.',
+          icon: 'warning',
+          confirmButtonColor: '#10b981'
+        });
         return;
       } else {
         item.quantity = newQty;
@@ -182,12 +193,22 @@ export default function POSPage() {
   const handleAddPayment = () => {
     const amount = Number(currentAmount);
     if (!amount || amount <= 0) {
-      alert('Masukkan jumlah uang pembayaran yang valid.');
+      Swal.fire({
+        title: 'Input Tidak Valid',
+        text: 'Masukkan jumlah uang pembayaran yang valid.',
+        icon: 'warning',
+        confirmButtonColor: '#10b981'
+      });
       return;
     }
 
     if (amount > balanceDue && currentMethod !== 'cash') {
-      alert('Pembayaran non-tunai tidak boleh melebihi jumlah tagihan.');
+      Swal.fire({
+        title: 'Kelebihan Bayar',
+        text: 'Pembayaran non-tunai tidak boleh melebihi jumlah tagihan.',
+        icon: 'warning',
+        confirmButtonColor: '#10b981'
+      });
       return;
     }
 
@@ -211,12 +232,22 @@ export default function POSPage() {
   // 5. Checkout Transaction API Call
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      alert('Keranjang belanja kosong.');
+      Swal.fire({
+        title: 'Keranjang Kosong',
+        text: 'Keranjang belanja kosong.',
+        icon: 'warning',
+        confirmButtonColor: '#10b981'
+      });
       return;
     }
 
     if (balanceDue > 0) {
-      alert('Pembayaran belum mencukupi total tagihan.');
+      Swal.fire({
+        title: 'Pembayaran Kurang',
+        text: 'Pembayaran belum mencukupi total tagihan.',
+        icon: 'warning',
+        confirmButtonColor: '#10b981'
+      });
       return;
     }
 
@@ -226,7 +257,12 @@ export default function POSPage() {
     );
 
     if (hasRestrictedDrug && !usePrescription) {
-      alert('Transaksi mengandung Obat Keras/Psikotropika. Harus melampirkan & memvalidasi Resep Dokter.');
+      Swal.fire({
+        title: 'Validasi Resep Wajib',
+        text: 'Transaksi mengandung Obat Keras/Psikotropika. Harus melampirkan & memvalidasi Resep Dokter.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
       return;
     }
 
@@ -304,7 +340,12 @@ export default function POSPage() {
         throw new Error(resData.error || 'Gagal memproses transaksi.');
       }
 
-      alert('Transaksi berhasil diselesaikan!');
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Transaksi berhasil diselesaikan!',
+        icon: 'success',
+        confirmButtonColor: '#10b981'
+      });
       
       // Auto open print receipt dialog
       window.print();
@@ -324,7 +365,12 @@ export default function POSPage() {
       fetchActiveBatches();
 
     } catch (err: any) {
-      alert(`Error Transaksi: ${err.message}`);
+      Swal.fire({
+        title: 'Gagal Checkout',
+        text: `Error Transaksi: ${err.message}`,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setCheckoutLoading(false);
     }

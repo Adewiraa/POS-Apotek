@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import styles from './inventory.module.css';
+import Swal from 'sweetalert2';
 
 interface Drug {
   id: string;
@@ -93,7 +94,12 @@ export default function DrugsPage() {
       setGenericName('');
       setKfaCode('');
       setMinStock(10);
-      alert('Obat berhasil ditambahkan ke database!');
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Obat berhasil ditambahkan ke database!',
+        icon: 'success',
+        confirmButtonColor: '#10b981'
+      });
     } catch (err: any) {
       console.warn('Gagal menyimpan ke database Supabase (menggunakan penyimpanan lokal statis):', err.message);
       // Fallback: simpan ke state lokal untuk kelancaran demo
@@ -118,10 +124,20 @@ export default function DrugsPage() {
     try {
       const { error } = await supabase.from('drugs').insert(INITIAL_MOCK_DRUGS);
       if (error) throw error;
-      alert('Database berhasil di-seed dengan data master obat!');
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Database berhasil di-seed dengan data master obat!',
+        icon: 'success',
+        confirmButtonColor: '#10b981'
+      });
       fetchDrugs();
     } catch (err: any) {
-      alert(`Gagal seeding database: ${err.message || 'Harap periksa tabel SQL Supabase Anda.'}`);
+      Swal.fire({
+        title: 'Gagal Seeding',
+        text: err.message || 'Harap periksa tabel SQL Supabase Anda.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
       setLoading(false);
     }
   };

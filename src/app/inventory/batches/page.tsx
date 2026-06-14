@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import styles from '../inventory.module.css';
+import Swal from 'sweetalert2';
 
 interface Drug {
   id: string;
@@ -89,7 +90,12 @@ export default function BatchesPage() {
   const handleAddBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDrugId) {
-      alert('Pilih obat terlebih dahulu.');
+      Swal.fire({
+        title: 'Perhatian',
+        text: 'Pilih obat terlebih dahulu.',
+        icon: 'warning',
+        confirmButtonColor: '#10b981'
+      });
       return;
     }
     setSubmitting(true);
@@ -135,9 +141,19 @@ export default function BatchesPage() {
       setPurchasePrice('');
       setSellingPrice('');
       setStock('');
-      alert('Batch obat baru berhasil dicatat!');
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Batch obat baru berhasil dicatat!',
+        icon: 'success',
+        confirmButtonColor: '#10b981'
+      });
     } catch (err: any) {
-      alert(`Gagal menyimpan ke Supabase: ${err.message}. Harap periksa kembali relasi database Anda.`);
+      Swal.fire({
+        title: 'Gagal Menyimpan',
+        text: `Gagal menyimpan ke Supabase: ${err.message}. Harap periksa kembali relasi database Anda.`,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setSubmitting(false);
     }
