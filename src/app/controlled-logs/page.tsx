@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import styles from '../inventory/inventory.module.css';
+import Swal from 'sweetalert2';
 
 interface ControlledLog {
   id: string;
@@ -71,8 +72,14 @@ export default function ControlledLogsPage() {
       } else {
         setLogs([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching controlled logs:', err);
+      Swal.fire({
+        title: 'Error Koneksi Database',
+        text: `Gagal memuat log mutasi: ${err.message || 'Permission Denied'}. Harap jalankan script SQL Grant di Supabase SQL Editor.`,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setLoading(false);
     }

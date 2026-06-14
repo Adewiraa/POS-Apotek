@@ -76,8 +76,14 @@ export default function BatchesPage() {
         // Fallback mock data jika database kosong
         setBatches([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching batch data:', err);
+      Swal.fire({
+        title: 'Error Koneksi Database',
+        text: `Gagal memuat data batch: ${err.message || 'Permission Denied'}. Harap jalankan script SQL Grant di Supabase SQL Editor.`,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setLoading(false);
     }

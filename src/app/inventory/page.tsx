@@ -50,8 +50,14 @@ export default function DrugsPage() {
       if (data) {
         setDrugs(data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching drugs:', err);
+      Swal.fire({
+        title: 'Error Koneksi Database',
+        text: `Gagal memuat katalog obat: ${err.message || 'Permission Denied'}. Harap jalankan script SQL Grant di Supabase SQL Editor.`,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
       setDrugs([]);
     } finally {
       setLoading(false);

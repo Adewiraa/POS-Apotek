@@ -114,8 +114,14 @@ export default function POSPage() {
       } else {
         setBatches([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching active stock:', err);
+      Swal.fire({
+        title: 'Error Koneksi Database',
+        text: `Gagal mengambil stok obat: ${err.message || 'Permission Denied'}. Harap jalankan script SQL Grant di Supabase SQL Editor.`,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setLoading(false);
     }
