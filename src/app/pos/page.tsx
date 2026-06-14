@@ -343,6 +343,16 @@ export default function POSPage() {
     try {
       let prescription_id = null;
 
+      // Dapatkan active user id untuk pencatatan cashier_id
+      let cashier_id = null;
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        cashier_id = currentUser.id;
+      } else {
+        const { data: profile } = await supabase.from('profiles').select('id').limit(1).single();
+        if (profile) cashier_id = profile.id;
+      }
+
       // Jika menggunakan resep dokter, daftarkan resep terlebih dahulu
       if (usePrescription) {
         let image_url = null;
@@ -435,7 +445,8 @@ export default function POSPage() {
           discount,
           tax,
           items: cart,
-          payments: checkoutPayments
+          payments: checkoutPayments,
+          cashier_id
         })
       });
 

@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { invoice_number, prescription_id, discount, tax, items, payments } = body;
+    const { invoice_number, prescription_id, discount, tax, items, payments, cashier_id: bodyCashierId } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Keranjang belanja kosong.' }, { status: 400 });
@@ -54,17 +54,18 @@ export async function POST(request: Request) {
     }
 
     // 4. Daftarkan penjualan utama (Sales)
-    // Ambil cashier_id. Di sini kita menggunakan fallback UUID untuk demo jika belum ada autentikasi aktif
-    let cashier_id = '00000000-0000-0000-0000-000000000000';
-    
-    // Periksa user aktif dari Supabase
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      cashier_id = user.id;
-    } else {
-      // Cari profil admin/cashier pertama untuk demo
-      const { data: profile } = await supabase.from('profiles').select('id').limit(1).single();
-      if (profile) cashier_id = profile.id;
+    let cashier_id = bodyCashierId;
+
+    if (!cashier_id) {
+      // Periksa user aktif dari Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        cashier_id = user.id;
+      } else {
+        // Cari profil admin/cashier pertama untuk demo
+        const { data: profile } = await supabase.from('profiles').select('id').limit(1).single();
+        if (profile) cashier_id = profile.id;
+      }
     }
 
     const { data: sale, error: saleError } = await supabase
