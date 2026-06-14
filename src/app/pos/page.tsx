@@ -61,6 +61,124 @@ export default function POSPage() {
     return new Intl.NumberFormat('id-ID').format(Number(clean));
   };
 
+  const formatRupiahFull = (num: number) =>
+    new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+  // --- Print Receipt: buka popup window dengan HTML struk thermal lengkap ---
+  const printReceipt = (
+    invNum: string,
+    cartItems: CartItem[],
+    disc: number,
+    txAmount: number,
+    txTax: number,
+    paidPayments: PaymentEntry[],
+    drName: string,
+    ptName: string,
+    cashierName: string
+  ) => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const subtotalAmt = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+
+    const itemRows = cartItems.map(item => `
+      <tr>
+        <td colspan="2" style="padding:4px 0 2px">
+          <strong>${item.name}</strong><br/>
+          <span style="font-size:10px;color:#555">Batch: ${item.batch_number} | ${item.unit}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 0 6px">${item.quantity} x ${formatRupiahFull(item.price)}</td>
+        <td style="text-align:right;padding:0 0 6px">${formatRupiahFull(item.price * item.quantity)}</td>
+      </tr>
+    `).join('');
+
+    const paymentMethodLabel = (m: string) => {
+      if (m === 'cash') return 'Tunai';
+      if (m === 'qris') return 'QRIS';
+      if (m === 'card') return 'Kartu';
+      if (m === 'insurance') return 'Asuransi';
+      return m;
+    };
+
+    const payRows = paidPayments.map(p => `
+      <tr>
+        <td>${paymentMethodLabel(p.payment_method)}${p.reference_number ? ` <small>(${p.reference_number})</small>` : ''}</td>
+        <td style="text-align:right">${formatRupiahFull(p.amount)}</td>
+      </tr>
+    `).join('');
+
+    const cashPaid = paidPayments.filter(p => p.payment_method === 'cash').reduce((s, p) => s + p.amount, 0);
+    const changeAmt = Math.max(0, cashPaid - txAmount);
+
+    const html = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Struk - ${invNum}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 300px; margin: 0 auto; padding: 12px; color: #000; background: #fff; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .divider { border-top: 1px dashed #000; margin: 6px 0; }
+    .divider-solid { border-top: 2px solid #000; margin: 6px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td { vertical-align: top; font-size: 12px; }
+    .header-logo { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
+    .footer { margin-top: 12px; font-size: 11px; }
+    .total-row td { font-weight: bold; font-size: 13px; padding-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <div class="header-logo">💊 ApoGo POS</div>
+    <div>Apotek Modern</div>
+    <div style="font-size:10px">Jl. Contoh No. 1, Jakarta</div>
+    <div style="font-size:10px">Telp: (021) 000-0000</div>
+  </div>
+  <div class="divider-solid"></div>
+  <table>
+    <tr><td>Invoice</td><td style="text-align:right">${invNum}</td></tr>
+    <tr><td>Tanggal</td><td style="text-align:right">${dateStr}, ${timeStr}</td></tr>
+    <tr><td>Kasir</td><td style="text-align:right">${cashierName}</td></tr>
+    ${drName ? `<tr><td>Dokter</td><td style="text-align:right">${drName}</td></tr>` : ''}
+    ${ptName ? `<tr><td>Pasien</td><td style="text-align:right">${ptName}</td></tr>` : ''}
+  </table>
+  <div class="divider"></div>
+  <table>${itemRows}</table>
+  <div class="divider"></div>
+  <table>
+    <tr><td>Subtotal</td><td style="text-align:right">${formatRupiahFull(subtotalAmt)}</td></tr>
+    ${disc > 0 ? `<tr><td>Diskon</td><td style="text-align:right">- ${formatRupiahFull(disc)}</td></tr>` : ''}
+    <tr><td>PPN 11%</td><td style="text-align:right">${formatRupiahFull(txTax)}</td></tr>
+  </table>
+  <div class="divider-solid"></div>
+  <table><tr class="total-row"><td>TOTAL</td><td style="text-align:right">${formatRupiahFull(txAmount)}</td></tr></table>
+  <div class="divider"></div>
+  <div style="font-size:11px;margin-bottom:4px"><strong>Metode Pembayaran:</strong></div>
+  <table>${payRows}</table>
+  ${changeAmt > 0 ? `<table><tr><td>Kembalian</td><td style="text-align:right">${formatRupiahFull(changeAmt)}</td></tr></table>` : ''}
+  <div class="divider-solid"></div>
+  <div class="center footer">
+    <div>Terima kasih atas kunjungan Anda!</div>
+    <div style="margin-top:4px">Simpan struk ini sebagai bukti pembelian.</div>
+    <div style="margin-top:8px;font-size:10px">★ ApoGo POS ★</div>
+  </div>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=360,height=700,scrollbars=yes');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => { win.print(); }, 500);
+    }
+  };
+
   // Multi-Payment states (Split Payment)
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [currentMethod, setCurrentMethod] = useState<'cash' | 'qris' | 'card' | 'insurance'>('cash');
@@ -456,15 +574,34 @@ export default function POSPage() {
         throw new Error(resData.error || 'Gagal memproses transaksi.');
       }
 
-      Swal.fire({
-        title: 'Berhasil!',
-        text: 'Transaksi berhasil diselesaikan!',
+      // Ambil nama kasir dari session
+      let cashierName = 'Kasir';
+      try {
+        const session = JSON.parse(localStorage.getItem('demo_session') || '{}');
+        cashierName = session?.name || 'Kasir';
+      } catch (_) {}
+
+      // Print struk terlebih dahulu sebelum reset state
+      printReceipt(
+        invoiceNumber,
+        [...cart],
+        discount,
+        totalAmount,
+        tax,
+        checkoutPayments,
+        doctorName,
+        patientName,
+        cashierName
+      );
+
+      await Swal.fire({
+        title: '✅ Transaksi Berhasil!',
+        html: `Invoice <strong>${invoiceNumber}</strong> telah dicatat.<br/>Struk sedang dicetak.`,
         icon: 'success',
-        confirmButtonColor: '#10b981'
+        confirmButtonColor: '#10b981',
+        timer: 3000,
+        timerProgressBar: true
       });
-      
-      // Auto open print receipt dialog
-      window.print();
 
       // Reset Kasir
       setCart([]);
