@@ -98,10 +98,14 @@ Kasir memproses pembelian obat di meja depan dan memvalidasi kelayakan resep oba
      * **Nama Pasien:** `Budi Santoso`
      * **No. HP Pasien:** `081234567890`
      * **Foto/Scan Dokumen Resep:** Unggah file contoh `resep-alprazolam.png`.
-4. **Pengisian Multi-Payment (Split Payment):**
-   * Pilih metode **Asuransi / BPJS**, ketik Jumlah Uang `25000`, klik **Tambah Metode Pembayaran**.
-   * Pilih metode **Tunai**, ketik Jumlah Uang `11000`, klik **Tambah Metode Pembayaran**.
-   * Kalkulator POS mendeteksi total bayar = Rp 36.000 (Sisa Tagihan: Rp 0). Tombol pembayaran aktif.
+4. **Pengisian Metode Pembayaran Cepat (Single-Payment - Premium):**
+   * Secara default, sistem menggunakan **Mode Single-Payment** yang super cepat dan responsif.
+   * Cukup klik salah satu kartu pilihan metode pembayaran:
+     * **Tunai (Cash):** Masukkan uang diterima (atau klik tombol pintas **Uang Pas** / pecahan **50.000** / **100.000**). Kembalian akan langsung terhitung secara otomatis.
+     * **QRIS:** Sistem langsung memunculkan **Dynamic QR Code** yang di-generate dari nomor invoice unik. Kasir cukup meminta pelanggan memindai kode tersebut.
+     * **Kartu:** Isi data opsional Nama Bank dan No. Ref kartu.
+     * **Asuransi:** Isi data nama provider asuransi dan nomor polis.
+   * *Catatan:* Jika ada kebutuhan memecah pembayaran (misal sebagian asuransi, sebagian tunai), kasir tinggal mengaktifkan saklar toggle **Bagi Pembayaran (Split Payment)** untuk membuka kalkulator multi-payment.
 5. Klik **SELESAIKAN TRANSAKSI (PRINT STRUK)**.
 
 ### 📦 Output yang Dihasilkan:
@@ -123,9 +127,9 @@ Kasir memproses pembelian obat di meja depan dan memvalidasi kelayakan resep oba
   {
     "id": "sale-111",
     "invoice_number": "INV-20260614-[Random]",
-    "total_amount": 36000,
+    "total_amount": 39960,
     "discount": 0,
-    "tax": 0,
+    "tax": 3960,
     "prescription_id": "rx-777",
     "cashier_id": "id-kasir-aktif",
     "created_at": "2026-06-14T09:40:00.000Z"
