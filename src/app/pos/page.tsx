@@ -54,9 +54,12 @@ export default function POSPage() {
   const [patientPhone, setPatientPhone] = useState('');
   const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
 
-  // Billing states
-  const [discount, setDiscount] = useState(0);
-  const [tax, setTax] = useState(0);
+  // Helper memformat input rupiah (pemisah ribuan titik)
+  const formatInputRupiah = (value: string) => {
+    const clean = value.replace(/\D/g, '');
+    if (!clean) return '';
+    return new Intl.NumberFormat('id-ID').format(Number(clean));
+  };
 
   // Multi-Payment states
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
@@ -190,6 +193,44 @@ export default function POSPage() {
 
   // 3. Billing Calculations
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Kalkulasi diskon & PPN otomatis berdasarkan kebijakan
+  const { discount, tax, reason: discountReason } = (() => {
+    let autoDiscount = 0;
+    let discountReason = '';
+
+    // Aturan 1: Diskon Grosir berdasarkan total belanja
+    if (subtotal >= 150000) {
+      autoDiscount = Math.round(subtotal * 0.10); // 10%
+      discountReason = 'Diskon Grosir 10% (Subtotal >= Rp 150.000)';
+    } else if (subtotal >= 75000) {
+      autoDiscount = Math.round(subtotal * 0.05); // 5%
+      discountReason = 'Diskon Grosir 5% (Subtotal >= Rp 75.000)';
+    }
+
+    // Aturan 2: Diskon Promo Kuantitas Obat Bebas (min 3 item, potongan Rp 1.000 per tablet)
+    // Obat golongan Keras / Psikotropika / Narkotika dikecualikan secara mutlak
+    cart.forEach(item => {
+      const isPromoEligible = item.category === 'Obat Bebas' || item.category === 'Obat Bebas Terbatas';
+      if (isPromoEligible && item.quantity >= 3) {
+        const itemDiscount = item.quantity * 1000;
+        autoDiscount += itemDiscount;
+        discountReason += (discountReason ? ' + ' : '') + `Promo Qty ${item.name}`;
+      }
+    });
+
+    // Aturan 3: Pajak PPN 11% sesuai Kebijakan Pemerintah RI
+    // PPN dikenakan dari Nilai DPP (Subtotal setelah dikurangi diskon)
+    const dpp = Math.max(0, subtotal - autoDiscount);
+    const autoTax = Math.round(dpp * 0.11);
+
+    return {
+      discount: autoDiscount,
+      tax: autoTax,
+      reason: discountReason || 'Tidak ada diskon aktif'
+    };
+  })();
+
   const totalAmount = Math.max(0, subtotal - discount + tax);
 
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -197,7 +238,8 @@ export default function POSPage() {
 
   // 4. Manage Payments List
   const handleAddPayment = () => {
-    const amount = Number(currentAmount);
+    const rawVal = currentAmount.replace(/\D/g, '');
+    const amount = Number(rawVal);
     if (!amount || amount <= 0) {
       Swal.fire({
         title: 'Input Tidak Valid',
@@ -365,8 +407,6 @@ export default function POSPage() {
       setPatientName('');
       setPatientPhone('');
       setPrescriptionFile(null);
-      setDiscount(0);
-      setTax(0);
       generateInvoice();
       fetchActiveBatches();
 
@@ -559,22 +599,30 @@ export default function POSPage() {
 
           <div className={styles.billFormRow}>
             <div className={styles.billInputGroup}>
-              <label>Diskon (Rp)</label>
+              <label>Diskon Otomatis (Rp)</label>
               <input
-                type="number"
+                type="text"
                 className="input-field"
-                value={discount}
-                onChange={(e) => setDiscount(Math.max(0, Number(e.target.value)))}
+                style={{ backgroundColor: 'var(--bg-app)', cursor: 'not-allowed', fontWeight: 600 }}
+                value={formatRupiah(discount)}
+                disabled
               />
+              <small style={{ fontSize: '10px', color: 'var(--primary)', display: 'block', marginTop: '2px' }}>
+                {discountReason}
+              </small>
             </div>
             <div className={styles.billInputGroup}>
-              <label>Pajak/Jasa (Rp)</label>
+              <label>PPN 11% (Rp)</label>
               <input
-                type="number"
+                type="text"
                 className="input-field"
-                value={tax}
-                onChange={(e) => setTax(Math.max(0, Number(e.target.value)))}
+                style={{ backgroundColor: 'var(--bg-app)', cursor: 'not-allowed', fontWeight: 600 }}
+                value={formatRupiah(tax)}
+                disabled
               />
+              <small style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                UU HPP Pemerintah
+              </small>
             </div>
           </div>
 
@@ -601,11 +649,11 @@ export default function POSPage() {
             </select>
 
             <input
-              type="number"
+              type="text"
               className="input-field"
               placeholder="Jumlah Uang"
               value={currentAmount}
-              onChange={(e) => setCurrentAmount(e.target.value)}
+              onChange={(e) => setCurrentAmount(formatInputRupiah(e.target.value))}
             />
 
             <input
