@@ -18,12 +18,22 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) throw authError;
+
+      // Tarik profile untuk mendapatkan role pengguna dari Supabase
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, full_name')
+        .eq('id', data.user?.id)
+        .single();
+
+      const role = profile?.role || 'cashier';
+      document.cookie = `demo_role=${role}; path=/; max-age=86400`;
 
       router.push('/dashboard');
     } catch (err: any) {
@@ -41,6 +51,9 @@ export default function LoginPage() {
       role: role,
       name: role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina'
     }));
+
+    // Simpan ke cookie agar Next.js middleware bisa membaca role untuk RBAC
+    document.cookie = `demo_role=${role}; path=/; max-age=86400`;
     
     setTimeout(() => {
       router.push('/dashboard');

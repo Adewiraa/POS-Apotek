@@ -48,6 +48,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     localStorage.removeItem('demo_session');
+    document.cookie = "demo_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
     await supabase.auth.signOut();
     router.push('/login');
   };
