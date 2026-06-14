@@ -144,6 +144,17 @@ export default function POSPage() {
     fetchActiveBatches();
   }, []);
 
+  const hasRestrictedDrug = cart.some(item =>
+    item.category === 'Obat Keras' || item.category === 'Psikotropika' || item.category === 'Narkotika'
+  );
+
+  // Auto-enable prescription form if cart has restricted drugs (Obat Keras / Psikotropika / Narkotika)
+  useEffect(() => {
+    if (hasRestrictedDrug) {
+      setUsePrescription(true);
+    }
+  }, [hasRestrictedDrug]);
+
   // 2. Add to Cart
   const handleAddToCart = (batch: DrugBatchJoin) => {
     const existingIndex = cart.findIndex(item => item.batch_id === batch.id);
@@ -315,19 +326,17 @@ export default function POSPage() {
       return;
     }
 
-    // Cek jika ada obat resep/psikotropika namun tidak menggunakan resep
-    const hasRestrictedDrug = cart.some(item => 
-      item.category === 'Obat Keras' || item.category === 'Psikotropika' || item.category === 'Narkotika'
-    );
-
-    if (hasRestrictedDrug && !usePrescription) {
-      Swal.fire({
-        title: 'Validasi Resep Wajib',
-        text: 'Transaksi mengandung Obat Keras/Psikotropika. Harus melampirkan & memvalidasi Resep Dokter.',
-        icon: 'error',
-        confirmButtonColor: '#ef4444'
-      });
-      return;
+    // Validasi kelengkapan data resep jika menggunakan resep atau mengandung obat keras
+    if (usePrescription || hasRestrictedDrug) {
+      if (!doctorName.trim() || !patientName.trim()) {
+        Swal.fire({
+          title: 'Data Resep Belum Lengkap',
+          text: 'Harap isi Nama Dokter dan Nama Pasien pada form resep di sebelah kanan.',
+          icon: 'warning',
+          confirmButtonColor: '#10b981'
+        });
+        return;
+      }
     }
 
     setCheckoutLoading(true);
@@ -567,11 +576,28 @@ export default function POSPage() {
               <input
                 type="checkbox"
                 checked={usePrescription}
-                onChange={(e) => setUsePrescription(e.target.checked)}
+                onChange={(e) => {
+                  if (hasRestrictedDrug) {
+                    Swal.fire({
+                      title: 'Validasi Resep Wajib',
+                      text: 'Transaksi mengandung Obat Keras/Psikotropika. Resep dokter wajib divalidasi.',
+                      icon: 'warning',
+                      confirmButtonColor: '#10b981'
+                    });
+                    return;
+                  }
+                  setUsePrescription(e.target.checked);
+                }}
+                disabled={hasRestrictedDrug}
               />
               <span className={styles.slider}></span>
             </label>
           </div>
+          {hasRestrictedDrug && (
+            <div style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold', marginTop: '6px' }}>
+              ⚠️ Mengandung Obat Keras / Psikotropika / Narkotika. Resep Dokter Wajib Dilampirkan & Divalidasi!
+            </div>
+          )}
 
           {usePrescription && (
             <div className={styles.rxForm}>
