@@ -56,19 +56,20 @@ export default function LoginPage() {
         password: 'password123',
       });
 
-      if (authError) throw authError;
+      let userId = data?.user?.id;
+      let userEmail = data?.user?.email;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, full_name')
-        .eq('id', data.user?.id)
-        .single();
+      if (authError) {
+        console.warn('Supabase Auth error during demo login, falling back to local simulation:', authError.message);
+        userId = role === 'admin' ? '8f3699a5-8500-45b6-8c22-1037211f23e0' : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
+        userEmail = email;
+      }
 
-      const userRole = role; // Tetap gunakan role yang diminta untuk RBAC demo
+      const userRole = role; 
       const userName = role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina';
 
       localStorage.setItem('demo_session', JSON.stringify({
-        user: { id: data.user?.id, email: data.user?.email },
+        user: { id: userId, email: userEmail },
         role: userRole,
         name: userName
       }));
@@ -76,7 +77,15 @@ export default function LoginPage() {
       document.cookie = `demo_role=${userRole}; path=/; max-age=86400`;
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Gagal melakukan login demo.');
+      console.error('Total fallback active:', err);
+      const userId = role === 'admin' ? '8f3699a5-8500-45b6-8c22-1037211f23e0' : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
+      localStorage.setItem('demo_session', JSON.stringify({
+        user: { id: userId, email: role === 'admin' ? 'admin@demo.com' : 'kasir@demo.com' },
+        role: role,
+        name: role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina'
+      }));
+      document.cookie = `demo_role=${role}; path=/; max-age=86400`;
+      router.push('/dashboard');
     } finally {
       setLoading(false);
     }
