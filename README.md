@@ -1,43 +1,36 @@
-<div align="center">
-  <h1>💊 POS Apotek Modern</h1>
-  <p>Sistem Point of Sales, Inventory, dan Manajemen Pelayanan Kefarmasian Terpadu</p>
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-  ![Status](https://img.shields.io/badge/Status-Active-success?style=for-the-badge)
-  ![Type](https://img.shields.io/badge/Type-Enterprise_Software-blue?style=for-the-badge)
-</div>
+## Getting Started
 
----
+First, run the development server:
 
-## 📌 Tentang Aplikasi
-**POS Apotek Modern** adalah sebuah piranti lunak kelas *Enterprise* yang dirancang khusus untuk memodernisasi tata kelola dan pelayanan di apotek maupun klinik. 
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-Tidak seperti mesin kasir konvensional, sistem ini secara cerdas menggabungkan transaksi ritel dengan standar keamanan fasilitas kesehatan tingkat tinggi—mulai dari pencegahan obat kedaluwarsa, pemantauan obat keras, hingga manajemen pengadaan multi-cabang. Semua terintegrasi dalam satu platform yang mudah digunakan.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
----
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## 🚀 Fitur Unggulan
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-### 🛒 1. Transaksi Kasir Pintar (Point of Sales)
-- **Otomatisasi Stok (FEFO):** Setiap kali barang terjual, sistem otomatis mencari dan memotong stok dari obat yang memiliki tanggal kedaluwarsa paling dekat (*First Expired First Out*).
-- **Sistem Kasir Sibuk (Hold Bill):** Antrean panjang tidak lagi masalah. Kasir dapat menyimpan struk transaksi pelanggan yang sedang mencari uang atau kembali ke rak (Draft), lalu melayani pelanggan berikutnya tanpa menghilangkan data.
-- **Perhitungan Dinamis:** Sistem langsung menghitung Pajak (PPN), opsi diskon, dan tarif jasa racikan secara presisi sebelum struk dicetak.
-- **Pembatalan Aman (Void):** Mengembalikan barang dari transaksi yang batal langsung ke rak yang benar dengan mencatat alasan spesifik dan jejak mutasi.
+## Learn More
 
-### 🩺 2. Pelayanan Kefarmasian Digital
-- **Meja Racikan Obat:** Apoteker dapat membuat puyer, salep, atau kapsul dengan memotong stok beberapa bahan baku secara desimal dalam sekali klik.
-- **Gembok Obat Keras:** Obat-obatan resep atau obat keras secara otomatis terkunci di kasir dan baru bisa dibayar setelah Apoteker memvalidasi dan menyetujui (Approve) resep tersebut di sistem.
-- **Catatan Edukasi Pasien (KIE):** Fitur bawaan bagi Apoteker untuk mencatat riwayat konsultasi pasien tentang cara penggunaan dan efek samping obat.
+To learn more about Next.js, take a look at the following resources:
 
-### 📦 3. Manajemen Gudang & Rak
-- **Pelacakan Posisi Obat:** Lacak secara persis di cabang mana dan di rak nomor berapa sebuah obat (*Batch*) diletakkan.
-- **Peringatan Keamanan Visual:** Sistem secara otomatis memberikan bendera (Flag) peringatan pada layar kasir jika obat yang dipindai tergolong LASA (*Look Alike Sound Alike*) atau *High Alert*.
-- **Stock Opname Anti-Manipulasi:** Hasil hitung fisik gudang tidak langsung mengubah data di komputer. Harus melewati pengajuan untuk disetujui (Approval) oleh Pemilik / Manajer Apotek terlebih dahulu.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### 🚚 4. Rantai Pasok Terpadu (Procurement)
-- **Perencanaan Cerdas (Purchase Request):** Staf dapat membuat daftar usulan pembelian obat ke manajemen sebelum stok benar-benar habis.
-- **Order ke Supplier (Purchase Order):** Konversi usulan menjadi surat pesanan resmi ke PBF (Pedagang Besar Farmasi).
-- **Filter Penerimaan Barang:** Penjagaan gudang secara ketat. Barang yang datang dari kurir wajib didata Nomor Batch dan Tanggal Kedaluwarsanya oleh sistem.
-- **Retur ke Supplier:** Proses pengembalian barang cacat/kedaluwarsa yang terintegrasi otomatis dengan pemotongan stok di rak gudang.
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
----
-*Membawa fasilitas kefarmasian Anda melangkah ke era digital dengan keamanan, kecepatan, dan akurasi tinggi.* 🚀
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
