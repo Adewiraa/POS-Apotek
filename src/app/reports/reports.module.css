@@ -154,9 +154,7 @@
 
 @media print {
   .header,
-  .header button,
-  .navLeft button,
-  button,
+  :global(button),
   .warningBanner {
     display: none !important;
   }

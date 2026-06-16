@@ -251,9 +251,7 @@
 
 @media print {
   .header,
-  .header button,
-  .navLeft button,
-  button,
+  :global(button),
   .warningBanner,
   .card:first-of-type {
     display: none !important;

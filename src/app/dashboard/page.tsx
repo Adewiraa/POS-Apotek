@@ -25,7 +25,8 @@ export default function DashboardPage() {
     discounts: false,
     users: false,
     returns: false,
-    procurement: false
+    procurement: false,
+    alerts: false
   });
 
   // Live Stats
@@ -65,6 +66,7 @@ export default function DashboardPage() {
           { role: 'admin', menu_key: 'users', is_allowed: true },
           { role: 'admin', menu_key: 'returns', is_allowed: true },
           { role: 'admin', menu_key: 'procurement', is_allowed: true },
+          { role: 'admin', menu_key: 'alerts', is_allowed: true },
           { role: 'pharmacist', menu_key: 'pos', is_allowed: true },
           { role: 'pharmacist', menu_key: 'inventory', is_allowed: true },
           { role: 'pharmacist', menu_key: 'controlled_logs', is_allowed: true },
@@ -73,6 +75,7 @@ export default function DashboardPage() {
           { role: 'pharmacist', menu_key: 'users', is_allowed: false },
           { role: 'pharmacist', menu_key: 'returns', is_allowed: true },
           { role: 'pharmacist', menu_key: 'procurement', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'alerts', is_allowed: true },
           { role: 'cashier', menu_key: 'pos', is_allowed: true },
           { role: 'cashier', menu_key: 'inventory', is_allowed: false },
           { role: 'cashier', menu_key: 'controlled_logs', is_allowed: false },
@@ -80,7 +83,8 @@ export default function DashboardPage() {
           { role: 'cashier', menu_key: 'discounts', is_allowed: false },
           { role: 'cashier', menu_key: 'users', is_allowed: false },
           { role: 'cashier', menu_key: 'returns', is_allowed: true },
-          { role: 'cashier', menu_key: 'procurement', is_allowed: false }
+          { role: 'cashier', menu_key: 'procurement', is_allowed: false },
+          { role: 'cashier', menu_key: 'alerts', is_allowed: false }
         ];
       }
       const permMap: Record<string, boolean> = {};
@@ -314,6 +318,15 @@ export default function DashboardPage() {
                 <span className={styles.menuIcon}>🛒</span>
                 <h4>Pengadaan / PO ke PBF</h4>
                 <p>Terbitkan dokumen PO baru ke PBF distributor dan terima pengiriman stok masuk.</p>
+              </div>
+            )}
+
+            {/* Pengaturan Alert & Notifikasi */}
+            {permissions.alerts && (
+              <div onClick={() => router.push('/alerts')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>📧</span>
+                <h4>Alert Stok &amp; Expired Date</h4>
+                <p>Konfigurasi notifikasi email &amp; WhatsApp untuk stok obat habis dan kadaluarsa.</p>
               </div>
             )}
 
