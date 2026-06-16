@@ -21,6 +21,7 @@ export default function UserManagementPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form states
   const [fullName, setFullName] = useState('');
@@ -81,13 +82,31 @@ export default function UserManagementPage() {
     fetchProfiles();
   }, []);
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleStartEdit = (profile: Profile) => {
+    setEditingId(profile.id);
+    setFullName(profile.full_name);
+    setEmail(profile.email || '');
+    setRole(profile.role as any);
+    setPassword('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    resetForm();
+  };
+
+  const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      Swal.fire('Error', 'Semua kolom input wajib diisi.', 'error');
+    if (!fullName.trim() || !email.trim()) {
+      Swal.fire('Error', 'Nama lengkap dan email wajib diisi.', 'error');
       return;
     }
-    if (password.length < 6) {
+
+    if (!editingId && !password.trim()) {
+      Swal.fire('Error', 'Password wajib diisi untuk pengguna baru.', 'error');
+      return;
+    }
+    if (!editingId && password.length < 6) {
       Swal.fire('Error', 'Password minimal harus 6 karakter.', 'error');
       return;
     }
@@ -95,54 +114,104 @@ export default function UserManagementPage() {
     setSubmitLoading(true);
 
     try {
-      if (dbError) {
-        // Fallback simulation using local storage
-        const newProfile: Profile = {
-          id: Math.random().toString(36).substring(2, 9),
-          full_name: fullName,
-          email,
-          role,
-          updated_at: new Date().toISOString()
-        };
-        const updated = [...profiles, newProfile];
-        localStorage.setItem('demo_profiles', JSON.stringify(updated));
-        setProfiles(updated);
-        Swal.fire('Simulasi Berhasil', 'Pengguna baru berhasil dibuat di penyimpanan lokal.', 'success');
-        resetForm();
+      if (editingId) {
+        // Edit Mode
+        if (dbError) {
+          const updated = profiles.map(p => {
+            if (p.id === editingId) {
+              return { ...p, full_name: fullName, email, role };
+            }
+            return p;
+          });
+          localStorage.setItem('demo_profiles', JSON.stringify(updated));
+          setProfiles(updated);
+          
+          // If editing logged-in user, update their session
+          if (editingId === currentUserSession?.user?.id) {
+            const updatedSession = { ...currentUserSession, role, name: fullName };
+            localStorage.setItem('demo_session', JSON.stringify(updatedSession));
+            document.cookie = `demo_role=${role}; path=/; max-age=86400`;
+            setCurrentUserSession(updatedSession);
+          }
+
+          Swal.fire('Simulasi Berhasil', 'Data pengguna berhasil diperbarui.', 'success');
+          setEditingId(null);
+          resetForm();
+        } else {
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              full_name: fullName,
+              email,
+              role
+            })
+            .eq('id', editingId);
+
+          if (error) throw error;
+
+          // If editing logged-in user, update session
+          if (editingId === currentUserSession?.user?.id) {
+            const updatedSession = { ...currentUserSession, role, name: fullName };
+            localStorage.setItem('demo_session', JSON.stringify(updatedSession));
+            document.cookie = `demo_role=${role}; path=/; max-age=86400`;
+            setCurrentUserSession(updatedSession);
+          }
+
+          Swal.fire('Berhasil', 'Data pengguna berhasil diperbarui.', 'success');
+          setEditingId(null);
+          resetForm();
+          fetchProfiles();
+        }
       } else {
-        // 1. Sign up user using temp supabase client (doesn't overwrite current admin session)
-        const tempSupabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          { auth: { persistSession: false } }
-        );
-
-        const { data: signUpData, error: authError } = await tempSupabase.auth.signUp({
-          email,
-          password
-        });
-
-        if (authError) throw authError;
-        if (!signUpData.user) throw new Error('Registrasi user gagal.');
-
-        // 2. Insert record into public.profiles
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{
-            id: signUpData.user.id,
+        // Create Mode
+        if (dbError) {
+          const newProfile: Profile = {
+            id: Math.random().toString(36).substring(2, 9),
             full_name: fullName,
             email,
-            role
-          }]);
+            role,
+            updated_at: new Date().toISOString()
+          };
+          const updated = [...profiles, newProfile];
+          localStorage.setItem('demo_profiles', JSON.stringify(updated));
+          setProfiles(updated);
+          Swal.fire('Simulasi Berhasil', 'Pengguna baru berhasil dibuat di penyimpanan lokal.', 'success');
+          resetForm();
+        } else {
+          // 1. Sign up user using temp supabase client
+          const tempSupabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { auth: { persistSession: false } }
+          );
 
-        if (profileError) throw profileError;
+          const { data: signUpData, error: authError } = await tempSupabase.auth.signUp({
+            email,
+            password
+          });
 
-        Swal.fire('Berhasil', 'Pengguna baru berhasil didaftarkan.', 'success');
-        resetForm();
-        fetchProfiles();
+          if (authError) throw authError;
+          if (!signUpData.user) throw new Error('Registrasi user gagal.');
+
+          // 2. Insert record into public.profiles
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: signUpData.user.id,
+              full_name: fullName,
+              email,
+              role
+            }]);
+
+          if (profileError) throw profileError;
+
+          Swal.fire('Berhasil', 'Pengguna baru berhasil didaftarkan.', 'success');
+          resetForm();
+          fetchProfiles();
+        }
       }
     } catch (err: any) {
-      Swal.fire('Error', `Gagal membuat pengguna: ${err.message}`, 'error');
+      Swal.fire('Error', `Gagal menyimpan pengguna: ${err.message}`, 'error');
     } finally {
       setSubmitLoading(false);
     }
@@ -244,10 +313,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
       )}
 
       <div className={styles.mainGrid}>
-        {/* Left Column: Form Add User */}
+        {/* Left Column: Form Add / Edit User */}
         <div className={`${styles.card} glass-panel`}>
-          <h3>➕ Registrasi Pengguna</h3>
-          <form onSubmit={handleCreateUser} className={styles.form}>
+          <h3>{editingId ? '✏️ Edit Pengguna' : '➕ Registrasi Pengguna'}</h3>
+          <form onSubmit={handleSubmitUser} className={styles.form}>
             <div className={styles.formGroup}>
               <label>Nama Lengkap</label>
               <input
@@ -272,17 +341,19 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
               />
             </div>
 
-            <div className={styles.formGroup}>
-              <label>Password (Min. 6 Karakter)</label>
-              <input
-                type="password"
-                className="input-field"
-                placeholder="••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+            {!editingId && (
+              <div className={styles.formGroup}>
+                <label>Password (Min. 6 Karakter)</label>
+                <input
+                  type="password"
+                  className="input-field"
+                  placeholder="••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required={!editingId}
+                />
+              </div>
+            )}
 
             <div className={styles.formGroup}>
               <label>Pilih Hak Akses (Role)</label>
@@ -298,8 +369,19 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ marginTop: '10px' }} disabled={submitLoading}>
-              {submitLoading ? 'Menyimpan...' : 'Daftarkan Pengguna'}
+              {submitLoading ? 'Menyimpan...' : (editingId ? 'Simpan Perubahan' : 'Daftarkan Pengguna')}
             </button>
+
+            {editingId && (
+              <button 
+                type="button" 
+                onClick={handleCancelEdit} 
+                className="btn btn-secondary" 
+                style={{ width: '100%', marginTop: '4px' }}
+              >
+                Batal Edit
+              </button>
+            )}
           </form>
         </div>
 
@@ -330,14 +412,23 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
                         </span>
                       </td>
                       <td>
-                        <button 
-                          onClick={() => handleDeleteProfile(profile.id)} 
-                          className="btn btn-danger" 
-                          style={{ padding: '4px 8px', fontSize: '12px' }}
-                          disabled={profile.id === currentUserSession?.user?.id}
-                        >
-                          🗑️ Hapus
-                        </button>
+                        <div className={styles.actionCell}>
+                          <button 
+                            onClick={() => handleStartEdit(profile)} 
+                            className="btn btn-secondary" 
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteProfile(profile.id)} 
+                            className="btn btn-danger" 
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                            disabled={profile.id === currentUserSession?.user?.id}
+                          >
+                            🗑️ Hapus
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
