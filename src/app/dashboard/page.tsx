@@ -15,12 +15,73 @@ export default function DashboardPage() {
   const router = useRouter();
   const [session, setSession] = useState<UserSession | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Dynamic permissions state
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({
+    pos: true,
+    inventory: false,
+    controlled_logs: false,
+    reports: false,
+    discounts: false,
+    users: false
+  });
 
   // Live Stats
   const [todaySales, setTodaySales] = useState(0);
   const [prescriptionCount, setPrescriptionCount] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [expiryCount, setExpiryCount] = useState(0);
+
+  // Fetch permissions for active role
+  const fetchPermissions = async (role: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('menu_key, is_allowed')
+        .eq('role', role);
+
+      if (error) throw error;
+      
+      const permMap: Record<string, boolean> = {};
+      data?.forEach((p: any) => {
+        permMap[p.menu_key] = p.is_allowed;
+      });
+      setPermissions(prev => ({ ...prev, ...permMap }));
+    } catch (_) {
+      // Fallback to local storage or defaults if database table is not ready
+      const local = localStorage.getItem('demo_role_permissions');
+      let allPerms = [];
+      if (local) {
+        allPerms = JSON.parse(local);
+      } else {
+        allPerms = [
+          { role: 'admin', menu_key: 'pos', is_allowed: true },
+          { role: 'admin', menu_key: 'inventory', is_allowed: true },
+          { role: 'admin', menu_key: 'controlled_logs', is_allowed: true },
+          { role: 'admin', menu_key: 'reports', is_allowed: true },
+          { role: 'admin', menu_key: 'discounts', is_allowed: true },
+          { role: 'admin', menu_key: 'users', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'pos', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'inventory', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'controlled_logs', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'reports', is_allowed: false },
+          { role: 'pharmacist', menu_key: 'discounts', is_allowed: false },
+          { role: 'pharmacist', menu_key: 'users', is_allowed: false },
+          { role: 'cashier', menu_key: 'pos', is_allowed: true },
+          { role: 'cashier', menu_key: 'inventory', is_allowed: false },
+          { role: 'cashier', menu_key: 'controlled_logs', is_allowed: false },
+          { role: 'cashier', menu_key: 'reports', is_allowed: false },
+          { role: 'cashier', menu_key: 'discounts', is_allowed: false },
+          { role: 'cashier', menu_key: 'users', is_allowed: false }
+        ];
+      }
+      const permMap: Record<string, boolean> = {};
+      allPerms.filter((p: any) => p.role === role).forEach((p: any) => {
+        permMap[p.menu_key] = p.is_allowed;
+      });
+      setPermissions(prev => ({ ...prev, ...permMap }));
+    }
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -47,6 +108,8 @@ export default function DashboardPage() {
 
       if (activeSession) {
         setSession(activeSession);
+        // Load role permissions
+        await fetchPermissions(activeSession.role);
         // Tarik data statistik riil dari database
         fetchStats();
       } else {
@@ -201,15 +264,17 @@ export default function DashboardPage() {
         <section className={styles.navSection}>
           <h3>Akses Cepat Fitur</h3>
           <div className={styles.menuGrid}>
-            {/* Layar Kasir: Diakses oleh semua role */}
-            <div onClick={() => router.push('/pos')} className={`${styles.menuCard} glass-panel`}>
-              <span className={styles.menuIcon}>🛒</span>
-              <h4>Layar Kasir (POS)</h4>
-              <p>Mulai transaksi penjualan baru, multi-payment, dan input resep dokter.</p>
-            </div>
+            {/* Layar Kasir */}
+            {permissions.pos && (
+              <div onClick={() => router.push('/pos')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>🛒</span>
+                <h4>Layar Kasir (POS)</h4>
+                <p>Mulai transaksi penjualan baru, multi-payment, dan input resep dokter.</p>
+              </div>
+            )}
 
-            {/* Gudang & Inventaris: Hanya Admin & Apoteker */}
-            {(session?.role === 'admin' || session?.role === 'pharmacist') && (
+            {/* Gudang & Inventaris */}
+            {permissions.inventory && (
               <div onClick={() => router.push('/inventory')} className={`${styles.menuCard} glass-panel`}>
                 <span className={styles.menuIcon}>📦</span>
                 <h4>Gudang &amp; Inventaris</h4>
@@ -217,8 +282,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Register Narkotika & Psikotropika: Hanya Admin & Apoteker */}
-            {(session?.role === 'admin' || session?.role === 'pharmacist') && (
+            {/* Register Narkotika & Psikotropika */}
+            {permissions.controlled_logs && (
               <div onClick={() => router.push('/controlled-logs')} className={`${styles.menuCard} glass-panel`}>
                 <span className={styles.menuIcon}>📝</span>
                 <h4>Register Narkotika &amp; Psikotropika</h4>
@@ -226,8 +291,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Laporan & Analitik: Hanya Admin */}
-            {session?.role === 'admin' && (
+            {/* Laporan & Analitik */}
+            {permissions.reports && (
               <div onClick={() => router.push('/reports')} className={`${styles.menuCard} glass-panel`}>
                 <span className={styles.menuIcon}>📊</span>
                 <h4>Laporan &amp; Analitik</h4>
@@ -235,8 +300,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Pengaturan Diskon: Hanya Admin */}
-            {session?.role === 'admin' && (
+            {/* Pengaturan Diskon */}
+            {permissions.discounts && (
               <div onClick={() => router.push('/discounts')} className={`${styles.menuCard} glass-panel`}>
                 <span className={styles.menuIcon}>🏷️</span>
                 <h4>Pengaturan Diskon</h4>
@@ -244,8 +309,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Manajemen Pengguna: Hanya Admin */}
-            {session?.role === 'admin' && (
+            {/* Manajemen Pengguna */}
+            {permissions.users && (
               <div onClick={() => router.push('/users')} className={`${styles.menuCard} glass-panel`}>
                 <span className={styles.menuIcon}>👥</span>
                 <h4>Manajemen Pengguna</h4>

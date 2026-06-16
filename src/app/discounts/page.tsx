@@ -68,6 +68,54 @@ export default function DiscountsPage() {
     }
   };
 
+  // Check permission on mount
+  useEffect(() => {
+    const checkPermission = async () => {
+      try {
+        const sessionStr = localStorage.getItem('demo_session');
+        if (!sessionStr) {
+          router.push('/login');
+          return;
+        }
+        const session = JSON.parse(sessionStr);
+
+        let isAllowed = false;
+        try {
+          const { data, error } = await supabase
+            .from('role_permissions')
+            .select('is_allowed')
+            .eq('role', session.role)
+            .eq('menu_key', 'discounts')
+            .single();
+
+          if (!error && data) {
+            isAllowed = data.is_allowed;
+          } else {
+            throw new Error();
+          }
+        } catch (_) {
+          // Fallback
+          const local = localStorage.getItem('demo_role_permissions');
+          if (local) {
+            const perms = JSON.parse(local);
+            const matched = perms.find((p: any) => p.role === session.role && p.menu_key === 'discounts');
+            isAllowed = matched ? matched.is_allowed : (session.role === 'admin');
+          } else {
+            isAllowed = (session.role === 'admin');
+          }
+        }
+
+        if (!isAllowed) {
+          Swal.fire('Akses Ditolak', 'Anda tidak memiliki hak akses untuk membuka halaman ini.', 'error');
+          router.push('/dashboard');
+        }
+      } catch (_) {
+        router.push('/login');
+      }
+    };
+    checkPermission();
+  }, [router]);
+
   useEffect(() => {
     fetchDiscounts();
   }, []);

@@ -15,10 +15,18 @@ interface Profile {
   updated_at: string;
 }
 
+interface RolePermission {
+  id?: string;
+  role: string;
+  menu_key: string;
+  is_allowed: boolean;
+}
+
 export default function UserManagementPage() {
   const router = useRouter();
   const [currentUserSession, setCurrentUserSession] = useState<any>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<RolePermission[]>([]);
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,19 +38,56 @@ export default function UserManagementPage() {
   const [role, setRole] = useState<'admin' | 'pharmacist' | 'cashier'>('cashier');
   const [submitLoading, setSubmitLoading] = useState(false);
 
-  // Load current user session
+  // Check current session & dynamic permission on mount
   useEffect(() => {
-    try {
-      const session = JSON.parse(localStorage.getItem('demo_session') || '{}');
-      setCurrentUserSession(session);
-      // Only allow admins
-      if (session?.role !== 'admin') {
-        Swal.fire('Akses Ditolak', 'Hanya administrator yang dapat mengakses halaman ini.', 'error');
-        router.push('/dashboard');
+    const verifyAccess = async () => {
+      try {
+        const sessionStr = localStorage.getItem('demo_session');
+        if (!sessionStr) {
+          router.push('/login');
+          return;
+        }
+
+        const session = JSON.parse(sessionStr);
+        setCurrentUserSession(session);
+
+        // Fetch permission for this page
+        let isAllowed = false;
+        try {
+          const { data, error } = await supabase
+            .from('role_permissions')
+            .select('is_allowed')
+            .eq('role', session.role)
+            .eq('menu_key', 'users')
+            .single();
+
+          if (!error && data) {
+            isAllowed = data.is_allowed;
+          } else {
+            throw new Error();
+          }
+        } catch (_) {
+          // Fallback
+          const local = localStorage.getItem('demo_role_permissions');
+          if (local) {
+            const perms = JSON.parse(local);
+            const matched = perms.find((p: any) => p.role === session.role && p.menu_key === 'users');
+            isAllowed = matched ? matched.is_allowed : (session.role === 'admin');
+          } else {
+            isAllowed = (session.role === 'admin');
+          }
+        }
+
+        if (!isAllowed) {
+          Swal.fire('Akses Ditolak', 'Anda tidak memiliki hak akses untuk membuka halaman ini.', 'error');
+          router.push('/dashboard');
+        }
+      } catch (_) {
+        router.push('/login');
       }
-    } catch (_) {
-      router.push('/login');
-    }
+    };
+
+    verifyAccess();
   }, [router]);
 
   // Fetch all user profiles
@@ -78,8 +123,50 @@ export default function UserManagementPage() {
     }
   };
 
+  // Fetch all role permissions
+  const fetchPermissions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('role_permissions')
+        .select('*');
+
+      if (error) throw error;
+      setRolePermissions(data || []);
+    } catch (_) {
+      // Fallback local storage
+      const local = localStorage.getItem('demo_role_permissions');
+      if (local) {
+        setRolePermissions(JSON.parse(local));
+      } else {
+        const defaultPerms = [
+          { role: 'admin', menu_key: 'pos', is_allowed: true },
+          { role: 'admin', menu_key: 'inventory', is_allowed: true },
+          { role: 'admin', menu_key: 'controlled_logs', is_allowed: true },
+          { role: 'admin', menu_key: 'reports', is_allowed: true },
+          { role: 'admin', menu_key: 'discounts', is_allowed: true },
+          { role: 'admin', menu_key: 'users', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'pos', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'inventory', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'controlled_logs', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'reports', is_allowed: false },
+          { role: 'pharmacist', menu_key: 'discounts', is_allowed: false },
+          { role: 'pharmacist', menu_key: 'users', is_allowed: false },
+          { role: 'cashier', menu_key: 'pos', is_allowed: true },
+          { role: 'cashier', menu_key: 'inventory', is_allowed: false },
+          { role: 'cashier', menu_key: 'controlled_logs', is_allowed: false },
+          { role: 'cashier', menu_key: 'reports', is_allowed: false },
+          { role: 'cashier', menu_key: 'discounts', is_allowed: false },
+          { role: 'cashier', menu_key: 'users', is_allowed: false }
+        ];
+        localStorage.setItem('demo_role_permissions', JSON.stringify(defaultPerms));
+        setRolePermissions(defaultPerms);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchProfiles();
+    fetchPermissions();
   }, []);
 
   const handleStartEdit = (profile: Profile) => {
@@ -256,6 +343,48 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleTogglePermission = async (roleKey: string, menuKey: string, currentAllowed: boolean) => {
+    const newAllowed = !currentAllowed;
+
+    // Build next state locally
+    const updated = rolePermissions.map(p => {
+      if (p.role === roleKey && p.menu_key === menuKey) {
+        return { ...p, is_allowed: newAllowed };
+      }
+      return p;
+    });
+
+    const exists = rolePermissions.some(p => p.role === roleKey && p.menu_key === menuKey);
+    const nextPerms = exists 
+      ? updated 
+      : [...rolePermissions, { role: roleKey, menu_key: menuKey, is_allowed: newAllowed }];
+
+    setRolePermissions(nextPerms);
+
+    try {
+      if (dbError) {
+        localStorage.setItem('demo_role_permissions', JSON.stringify(nextPerms));
+        Swal.fire('Sukses', 'Izin akses berhasil disimpan di penyimpanan lokal.', 'success');
+      } else {
+        // Insert/Update database
+        const { error } = await supabase
+          .from('role_permissions')
+          .upsert([{
+            role: roleKey,
+            menu_key: menuKey,
+            is_allowed: newAllowed
+          }], { onConflict: 'role,menu_key' });
+
+        if (error) throw error;
+        Swal.fire('Sukses', `Izin akses menu '${menuKey}' untuk role '${roleKey}' berhasil diperbarui.`, 'success');
+        fetchPermissions();
+      }
+    } catch (err: any) {
+      Swal.fire('Error', `Gagal mengubah izin akses: ${err.message}`, 'error');
+      fetchPermissions();
+    }
+  };
+
   const resetForm = () => {
     setFullName('');
     setEmail('');
@@ -297,7 +426,7 @@ export default function UserManagementPage() {
         <div className={styles.warningBanner}>
           <div>
             <strong>⚠️ Kolom 'email' Belum Siap / Akses Ditolak:</strong> Halaman manajemen user berjalan dalam mode <strong>Simulasi Lokal (localStorage)</strong>.
-            Silakan jalankan query SQL berikut di <strong>SQL Editor Supabase</strong> Anda untuk memperbarui tabel profil:
+            Silakan jalankan query SQL berikut di <strong>SQL Editor Supabase</strong> Anda untuk memperbarui tabel profil &amp; izin role:
           </div>
           <code>{`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 
@@ -436,6 +565,49 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
               </table>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Role Permissions Section */}
+      <div className={`${styles.card} glass-panel`} style={{ marginTop: '24px' }}>
+        <h3>⚙️ Atur Izin Akses Menu per Role</h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '-12px' }}>
+          Centang atau matikan akses untuk masing-masing menu di bawah ini. Perubahan akan langsung berdampak pada menu akses cepat yang tampil di dashboard staf.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '16px' }}>
+          {['admin', 'pharmacist', 'cashier'].map(r => (
+            <div key={r} className="glass-panel" style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <h4 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '16px' }}>
+                {r === 'admin' ? '👑 Admin' : r === 'pharmacist' ? '🔬 Apoteker' : '💵 Kasir'}
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {[
+                  { key: 'pos', label: '🛒 Layar Kasir (POS)' },
+                  { key: 'inventory', label: '📦 Gudang & Inventaris' },
+                  { key: 'controlled_logs', label: '📝 Register Narkotika' },
+                  { key: 'reports', label: '📊 Laporan & Analitik' },
+                  { key: 'discounts', label: '🏷️ Pengaturan Diskon' },
+                  { key: 'users', label: '👥 Manajemen Pengguna' }
+                ].map(m => {
+                  const matched = rolePermissions.find(p => p.role === r && p.menu_key === m.key);
+                  const isAllowed = matched ? matched.is_allowed : (r === 'admin');
+                  return (
+                    <label key={m.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={isAllowed}
+                        onChange={() => handleTogglePermission(r, m.key, isAllowed)}
+                        disabled={r === 'admin' && (m.key === 'users' || m.key === 'pos')}
+                        style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
+                      />
+                      <span>{m.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
