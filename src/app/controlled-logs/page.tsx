@@ -160,6 +160,39 @@ export default function ControlledLogsPage() {
     }
   };
 
+  const exportToCSV = () => {
+    if (logs.length === 0) {
+      alert('Tidak ada data register untuk diexport.');
+      return;
+    }
+    const headers = ['Waktu', 'Nama Obat', 'No. Batch', 'Tipe Mutasi', 'Jumlah', 'Satuan', 'Petugas', 'Keterangan'];
+    const rows = logs.map(l => [
+      new Date(l.created_at).toLocaleString('id-ID'),
+      l.drug?.name || '',
+      l.batch?.batch_number || '',
+      l.type === 'in' ? 'Masuk' : 'Keluar',
+      l.quantity,
+      l.drug?.unit || '',
+      l.profile?.full_name || '',
+      l.notes || ''
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Buku_Register_Narkotika_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const printPDF = () => {
+    window.print();
+  };
+
   // Check permission on mount
   useEffect(() => {
     const checkPermission = async () => {
@@ -356,8 +389,16 @@ export default function ControlledLogsPage() {
           </button>
           <h2>Buku Register Narkotika &amp; Psikotropika</h2>
         </div>
-        <div className={styles.badge} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
-          🔒 Wajib Audit BPOM
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button onClick={exportToCSV} className="btn btn-secondary" style={{ padding: '8px 14px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+            📊 Export Excel (CSV)
+          </button>
+          <button onClick={printPDF} className="btn btn-secondary" style={{ padding: '8px 14px', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+            📄 Cetak Laporan (PDF)
+          </button>
+          <div className={styles.badge} style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '6px 12px', borderRadius: '12px' }}>
+            🔒 Wajib Audit BPOM
+          </div>
         </div>
       </header>
 

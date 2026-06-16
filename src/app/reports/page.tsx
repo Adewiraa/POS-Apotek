@@ -97,6 +97,44 @@ export default function ReportsPage() {
     fetchSalesReport();
   }, []);
 
+  const exportToCSV = () => {
+    if (sales.length === 0) {
+      alert('Tidak ada data laporan untuk diexport.');
+      return;
+    }
+    const headers = ['Waktu Pembuatan', 'No. Invoice', 'Kasir', 'Subtotal Biaya', 'Potongan Diskon', 'Pajak / Jasa', 'Grand Total', 'Metode Pembayaran'];
+    const rows = sales.map(s => {
+      const subtotal = s.total_amount + s.discount - s.tax;
+      const paymentDetails = s.payments?.map(p => `${p.payment_method}: ${p.amount}`).join(' | ') || '';
+      return [
+        new Date(s.created_at).toLocaleString('id-ID'),
+        s.invoice_number,
+        s.profile?.full_name || '',
+        subtotal,
+        s.discount,
+        s.tax,
+        s.total_amount,
+        paymentDetails
+      ];
+    });
+
+    // Added BOM \uFEFF to support excel indonesian character formatting correctly
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Laporan_Penjualan_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const printPDF = () => {
+    window.print();
+  };
+
   const formatRupiah = (num: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
   };
@@ -120,9 +158,17 @@ export default function ReportsPage() {
           </button>
           <h2>Laporan Penjualan &amp; Finansial</h2>
         </div>
-        <button onClick={fetchSalesReport} className="btn btn-primary" style={{ padding: '8px 16px' }}>
-          🔄 Refresh Data
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={exportToCSV} className="btn btn-secondary" style={{ padding: '8px 14px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+            📊 Export Excel (CSV)
+          </button>
+          <button onClick={printPDF} className="btn btn-secondary" style={{ padding: '8px 14px', background: 'rgba(99, 102, 241, 0.15)', color: '#6366f1', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+            📄 Cetak Laporan (PDF)
+          </button>
+          <button onClick={fetchSalesReport} className="btn btn-primary" style={{ padding: '8px 16px' }}>
+            🔄 Refresh Data
+          </button>
+        </div>
       </header>
 
       {/* Summary Cards */}
