@@ -361,10 +361,21 @@ export default function UserManagementPage() {
 
     setRolePermissions(nextPerms);
 
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true
+    });
+
     try {
       if (dbError) {
         localStorage.setItem('demo_role_permissions', JSON.stringify(nextPerms));
-        Swal.fire('Sukses', 'Izin akses berhasil disimpan di penyimpanan lokal.', 'success');
+        Toast.fire({
+          icon: 'success',
+          title: `Akses '${menuKey}' untuk '${roleKey}' diperbarui`
+        });
       } else {
         // Insert/Update database
         const { error } = await supabase
@@ -376,7 +387,11 @@ export default function UserManagementPage() {
           }], { onConflict: 'role,menu_key' });
 
         if (error) throw error;
-        Swal.fire('Sukses', `Izin akses menu '${menuKey}' untuk role '${roleKey}' berhasil diperbarui.`, 'success');
+        
+        Toast.fire({
+          icon: 'success',
+          title: `Akses '${menuKey}' untuk '${roleKey}' diperbarui`
+        });
         fetchPermissions();
       }
     } catch (err: any) {
@@ -572,37 +587,53 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
       <div className={`${styles.card} glass-panel`} style={{ marginTop: '24px' }}>
         <h3>⚙️ Atur Izin Akses Menu per Role</h3>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '-12px' }}>
-          Centang atau matikan akses untuk masing-masing menu di bawah ini. Perubahan akan langsung berdampak pada menu akses cepat yang tampil di dashboard staf.
+          Gunakan tombol toggle di bawah ini untuk mengatur hak akses menu. Perubahan langsung disimpan dan memengaruhi tampilan dashboard staf.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '16px' }}>
           {['admin', 'pharmacist', 'cashier'].map(r => (
-            <div key={r} className="glass-panel" style={{ padding: '20px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-              <h4 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '16px' }}>
-                {r === 'admin' ? '👑 Admin' : r === 'pharmacist' ? '🔬 Apoteker' : '💵 Kasir'}
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div key={r} className={styles.roleCard}>
+              <div className={styles.roleCardHeader}>
+                <span className={styles.roleCardTitle}>
+                  {r === 'admin' ? '👑 Admin' : r === 'pharmacist' ? '🔬 Apoteker' : '💵 Kasir'}
+                </span>
+                <span className={styles.badge} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
+                  {r}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
-                  { key: 'pos', label: '🛒 Layar Kasir (POS)' },
-                  { key: 'inventory', label: '📦 Gudang & Inventaris' },
-                  { key: 'controlled_logs', label: '📝 Register Narkotika' },
-                  { key: 'reports', label: '📊 Laporan & Analitik' },
-                  { key: 'discounts', label: '🏷️ Pengaturan Diskon' },
-                  { key: 'users', label: '👥 Manajemen Pengguna' }
+                  { key: 'pos', label: 'Layar Kasir (POS)', icon: '🛒' },
+                  { key: 'inventory', label: 'Gudang & Inventaris', icon: '📦' },
+                  { key: 'controlled_logs', label: 'Register Narkotika', icon: '📝' },
+                  { key: 'reports', label: 'Laporan & Analitik', icon: '📊' },
+                  { key: 'discounts', label: 'Pengaturan Diskon', icon: '🏷️' },
+                  { key: 'users', label: 'Manajemen Pengguna', icon: '👥' }
                 ].map(m => {
                   const matched = rolePermissions.find(p => p.role === r && p.menu_key === m.key);
                   const isAllowed = matched ? matched.is_allowed : (r === 'admin');
+                  const isDisabled = r === 'admin' && (m.key === 'users' || m.key === 'pos');
+                  
                   return (
-                    <label key={m.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px', cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={isAllowed}
-                        onChange={() => handleTogglePermission(r, m.key, isAllowed)}
-                        disabled={r === 'admin' && (m.key === 'users' || m.key === 'pos')}
-                        style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
-                      />
-                      <span>{m.label}</span>
-                    </label>
+                    <div 
+                      key={m.key} 
+                      className={`${styles.permRow} ${isDisabled ? styles.permRowDisabled : ''}`}
+                    >
+                      <div className={styles.permMeta}>
+                        <span className={styles.permIcon}>{m.icon}</span>
+                        <span className={styles.permLabel}>{m.label}</span>
+                      </div>
+                      
+                      <label className={styles.switch}>
+                        <input
+                          type="checkbox"
+                          checked={isAllowed}
+                          disabled={isDisabled}
+                          onChange={() => handleTogglePermission(r, m.key, isAllowed)}
+                        />
+                        <span className={styles.slider}></span>
+                      </label>
+                    </div>
                   );
                 })}
               </div>
