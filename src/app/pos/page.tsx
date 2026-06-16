@@ -405,18 +405,7 @@ export default function POSPage() {
       discountReason = `${appliedDiscount.name} ${appliedDiscount.discount_percent}% (Subtotal >= ${formatRupiah(appliedDiscount.min_purchase)})`;
     }
 
-    // Aturan 2: Diskon Promo Kuantitas Obat Bebas (min 3 item, potongan Rp 1.000 per tablet)
-    // Obat golongan Keras / Psikotropika / Narkotika dikecualikan secara mutlak
-    cart.forEach(item => {
-      const isPromoEligible = item.category === 'Obat Bebas' || item.category === 'Obat Bebas Terbatas';
-      if (isPromoEligible && item.quantity >= 3) {
-        const itemDiscount = item.quantity * 1000;
-        autoDiscount += itemDiscount;
-        discountReason += (discountReason ? ' + ' : '') + `Promo Qty ${item.name}`;
-      }
-    });
-
-    // Aturan 3: Pajak PPN 11% sesuai Kebijakan Pemerintah RI
+    // Aturan 2: Pajak PPN 11% sesuai Kebijakan Pemerintah RI
     // PPN dikenakan dari Nilai DPP (Subtotal setelah dikurangi diskon)
     const dpp = Math.max(0, subtotal - autoDiscount);
     const autoTax = Math.round(dpp * 0.11);
