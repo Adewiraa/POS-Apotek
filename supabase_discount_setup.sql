@@ -3,11 +3,11 @@
 
 -- -------------------------------------------------------------
 -- JIKA ANDA SUDAH MEMBUAT TABEL SEBELUMNYA:
--- Jalankan perintah ALTER TABLE di bawah ini untuk menambahkan kolom tanggal:
+-- 1. Jalankan perintah ALTER TABLE di bawah ini untuk menambahkan kolom tanggal:
+--    ALTER TABLE public.discounts ADD COLUMN IF NOT EXISTS start_date TIMESTAMP WITH TIME ZONE, ADD COLUMN IF NOT EXISTS end_date TIMESTAMP WITH TIME ZONE;
 --
--- ALTER TABLE public.discounts 
--- ADD COLUMN IF NOT EXISTS start_date TIMESTAMP WITH TIME ZONE,
--- ADD COLUMN IF NOT EXISTS end_date TIMESTAMP WITH TIME ZONE;
+-- 2. Jalankan perintah GRANT di bawah ini jika halaman diskon menampilkan error/akses ditolak:
+--    GRANT SELECT, INSERT, UPDATE, DELETE ON public.discounts TO anon, authenticated, service_role;
 -- -------------------------------------------------------------
 
 -- 1. Create the table
@@ -41,3 +41,6 @@ INSERT INTO public.discounts (name, min_purchase, discount_percent, start_date, 
 ('Diskon Grosir 5%', 75000, 5, '2026-01-01T00:00:00Z', '2030-12-31T23:59:59Z', true),
 ('Mega Promo 10%', 150000, 10, '2026-06-01T00:00:00Z', '2026-08-31T23:59:59Z', true)
 ON CONFLICT DO NOTHING;
+
+-- 5. Grant access privileges to API roles
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.discounts TO anon, authenticated, service_role;

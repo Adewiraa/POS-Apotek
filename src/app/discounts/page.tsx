@@ -309,7 +309,10 @@ CREATE POLICY "Allow write access for authenticated users" ON public.discounts F
 
 INSERT INTO public.discounts (name, min_purchase, discount_percent, start_date, end_date, is_active) VALUES
 ('Diskon Grosir 5%', 75000, 5, '2026-01-01T00:00:00Z', '2030-12-31T23:59:59Z', true),
-('Mega Promo 10%', 150000, 10, '2026-06-01T00:00:00Z', '2026-08-31T23:59:59Z', true);`}</code>
+('Mega Promo 10%', 150000, 10, '2026-06-01T00:00:00Z', '2026-08-31T23:59:59Z', true)
+ON CONFLICT DO NOTHING;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.discounts TO anon, authenticated, service_role;`}</code>
           <div>
             Setelah Anda menjalankan SQL di atas, silakan <strong>muat ulang halaman ini</strong> untuk menghubungkannya secara langsung.
           </div>
