@@ -73,6 +73,10 @@ export default function POSPage() {
   const formatRupiahFull = (num: number) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 
+  const formatRupiah = (num: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+  };
+
   // --- Print Receipt: buka popup window dengan HTML struk thermal lengkap ---
   const printReceipt = (
     invNum: string,
@@ -275,21 +279,40 @@ export default function POSPage() {
         .order('min_purchase', { ascending: false });
 
       if (error) throw error;
-      setActiveDiscounts(data || []);
+      
+      const now = new Date();
+      const validDiscounts = (data || []).filter((d: any) => {
+        const start = d.start_date ? new Date(d.start_date) : null;
+        const end = d.end_date ? new Date(d.end_date) : null;
+        return (!start || now >= start) && (!end || now <= end);
+      });
+      setActiveDiscounts(validDiscounts);
     } catch (err: any) {
       console.warn('Gagal memuat diskon dari database, menggunakan fallback:', err.message);
       const local = localStorage.getItem('demo_discounts');
       if (local) {
-        const parsed = JSON.parse(local).filter((d: any) => d.is_active);
+        const now = new Date();
+        const parsed = JSON.parse(local).filter((d: any) => {
+          if (!d.is_active) return false;
+          const start = d.start_date ? new Date(d.start_date) : null;
+          const end = d.end_date ? new Date(d.end_date) : null;
+          return (!start || now >= start) && (!end || now <= end);
+        });
         parsed.sort((a: any, b: any) => b.min_purchase - a.min_purchase);
         setActiveDiscounts(parsed);
       } else {
         const defaultMock = [
-          { id: '3', name: 'Event Spesial 15%', min_purchase: 250000, discount_percent: 15, is_active: true },
-          { id: '2', name: 'Mega Promo 10%', min_purchase: 150000, discount_percent: 10, is_active: true },
-          { id: '1', name: 'Diskon Grosir 5%', min_purchase: 75000, discount_percent: 5, is_active: true }
+          { id: '3', name: 'Event Spesial 15%', min_purchase: 250000, discount_percent: 15, is_active: true, start_date: '2026-06-15T00:00:00Z', end_date: '2026-07-15T23:59:59Z' },
+          { id: '2', name: 'Mega Promo 10%', min_purchase: 150000, discount_percent: 10, is_active: true, start_date: '2026-06-01T00:00:00Z', end_date: '2026-08-31T23:59:59Z' },
+          { id: '1', name: 'Diskon Grosir 5%', min_purchase: 75000, discount_percent: 5, is_active: true, start_date: '2026-01-01T00:00:00Z', end_date: '2030-12-31T23:59:59Z' }
         ];
-        setActiveDiscounts(defaultMock);
+        const now = new Date();
+        const filteredMock = defaultMock.filter(d => {
+          const start = d.start_date ? new Date(d.start_date) : null;
+          const end = d.end_date ? new Date(d.end_date) : null;
+          return (!start || now >= start) && (!end || now <= end);
+        });
+        setActiveDiscounts(filteredMock);
       }
     }
   };
@@ -672,10 +695,6 @@ export default function POSPage() {
     b.name.toLowerCase().includes(search.toLowerCase()) ||
     b.batch_number.toLowerCase().includes(search.toLowerCase())
   );
-
-  const formatRupiah = (num: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-  };
 
   return (
     <div className={styles.posContainer}>

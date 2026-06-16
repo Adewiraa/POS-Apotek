@@ -11,6 +11,8 @@ interface DiscountRule {
   name: string;
   min_purchase: number;
   discount_percent: number;
+  start_date: string | null;
+  end_date: string | null;
   is_active: boolean;
   created_at?: string;
 }
@@ -26,6 +28,8 @@ export default function DiscountsPage() {
   const [name, setName] = useState('');
   const [minPurchase, setMinPurchase] = useState('');
   const [discountPercent, setDiscountPercent] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -52,9 +56,9 @@ export default function DiscountsPage() {
         setDiscounts(JSON.parse(local));
       } else {
         const defaultMock: DiscountRule[] = [
-          { id: '1', name: 'Diskon Grosir 5%', min_purchase: 75000, discount_percent: 5, is_active: true },
-          { id: '2', name: 'Mega Promo 10%', min_purchase: 150000, discount_percent: 10, is_active: true },
-          { id: '3', name: 'Event Spesial 15%', min_purchase: 250000, discount_percent: 15, is_active: true }
+          { id: '1', name: 'Diskon Grosir 5%', min_purchase: 75000, discount_percent: 5, start_date: '2026-01-01T00:00:00Z', end_date: '2030-12-31T23:59:59Z', is_active: true },
+          { id: '2', name: 'Mega Promo 10%', min_purchase: 150000, discount_percent: 10, start_date: '2026-06-01T00:00:00Z', end_date: '2026-08-31T23:59:59Z', is_active: true },
+          { id: '3', name: 'Event Spesial 15%', min_purchase: 250000, discount_percent: 15, start_date: '2026-06-15T00:00:00Z', end_date: '2026-07-15T23:59:59Z', is_active: true }
         ];
         localStorage.setItem('demo_discounts', JSON.stringify(defaultMock));
         setDiscounts(defaultMock);
@@ -85,6 +89,8 @@ export default function DiscountsPage() {
 
     const cleanMinPurchase = Number(minPurchase.replace(/\D/g, ''));
     const cleanPercent = Number(discountPercent);
+    const cleanStartDate = startDate ? new Date(startDate).toISOString() : null;
+    const cleanEndDate = endDate ? new Date(endDate).toISOString() : null;
 
     if (!name.trim()) {
       Swal.fire('Error', 'Nama event diskon harus diisi.', 'error');
@@ -98,6 +104,10 @@ export default function DiscountsPage() {
       Swal.fire('Error', 'Persentase diskon harus bernilai antara 1 s/d 100.', 'error');
       return;
     }
+    if (cleanStartDate && cleanEndDate && new Date(cleanStartDate) >= new Date(cleanEndDate)) {
+      Swal.fire('Error', 'Tanggal berakhir harus setelah tanggal mulai.', 'error');
+      return;
+    }
 
     setSubmitLoading(true);
 
@@ -108,7 +118,7 @@ export default function DiscountsPage() {
         if (editId) {
           updatedList = discounts.map(d => 
             d.id === editId 
-              ? { ...d, name, min_purchase: cleanMinPurchase, discount_percent: cleanPercent, is_active: isActive } 
+              ? { ...d, name, min_purchase: cleanMinPurchase, discount_percent: cleanPercent, start_date: cleanStartDate, end_date: cleanEndDate, is_active: isActive } 
               : d
           );
           Swal.fire('Simulasi Berhasil', 'Diskon berhasil diperbarui di penyimpanan lokal.', 'success');
@@ -118,6 +128,8 @@ export default function DiscountsPage() {
             name,
             min_purchase: cleanMinPurchase,
             discount_percent: cleanPercent,
+            start_date: cleanStartDate,
+            end_date: cleanEndDate,
             is_active: isActive
           };
           updatedList = [...discounts, newDisc];
@@ -135,6 +147,8 @@ export default function DiscountsPage() {
               name,
               min_purchase: cleanMinPurchase,
               discount_percent: cleanPercent,
+              start_date: cleanStartDate,
+              end_date: cleanEndDate,
               is_active: isActive
             })
             .eq('id', editId);
@@ -148,6 +162,8 @@ export default function DiscountsPage() {
               name,
               min_purchase: cleanMinPurchase,
               discount_percent: cleanPercent,
+              start_date: cleanStartDate,
+              end_date: cleanEndDate,
               is_active: isActive
             }]);
 
@@ -227,6 +243,8 @@ export default function DiscountsPage() {
     setMinPurchase(formatInputRupiah(String(rule.min_purchase)));
     setDiscountPercent(String(rule.discount_percent));
     setIsActive(rule.is_active);
+    setStartDate(rule.start_date ? rule.start_date.substring(0, 16) : '');
+    setEndDate(rule.end_date ? rule.end_date.substring(0, 16) : '');
   };
 
   const resetForm = () => {
@@ -235,6 +253,24 @@ export default function DiscountsPage() {
     setMinPurchase('');
     setDiscountPercent('');
     setIsActive(true);
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const formatDateString = (isoString?: string | null) => {
+    if (!isoString) return 'Selamanya (Selalu Aktif)';
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) + ' WIB';
+    } catch (e) {
+      return '-';
+    }
   };
 
   return (
@@ -261,6 +297,8 @@ export default function DiscountsPage() {
     name VARCHAR(255) NOT NULL,
     min_purchase NUMERIC NOT NULL DEFAULT 0,
     discount_percent NUMERIC NOT NULL DEFAULT 0,
+    start_date TIMESTAMP WITH TIME ZONE,
+    end_date TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -269,9 +307,9 @@ ALTER TABLE public.discounts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access" ON public.discounts FOR SELECT USING (true);
 CREATE POLICY "Allow write access for authenticated users" ON public.discounts FOR ALL USING (true) WITH CHECK (true);
 
-INSERT INTO public.discounts (name, min_purchase, discount_percent, is_active) VALUES
-('Diskon Grosir 5%', 75000, 5, true),
-('Mega Promo 10%', 150000, 10, true);`}</code>
+INSERT INTO public.discounts (name, min_purchase, discount_percent, start_date, end_date, is_active) VALUES
+('Diskon Grosir 5%', 75000, 5, '2026-01-01T00:00:00Z', '2030-12-31T23:59:59Z', true),
+('Mega Promo 10%', 150000, 10, '2026-06-01T00:00:00Z', '2026-08-31T23:59:59Z', true);`}</code>
           <div>
             Setelah Anda menjalankan SQL di atas, silakan <strong>muat ulang halaman ini</strong> untuk menghubungkannya secara langsung.
           </div>
@@ -328,6 +366,26 @@ INSERT INTO public.discounts (name, min_purchase, discount_percent, is_active) V
               </div>
             </div>
 
+            <div className={styles.formGroup}>
+              <label>Tanggal Mulai (Opsional)</label>
+              <input
+                type="datetime-local"
+                className="input-field"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Tanggal Berakhir (Opsional)</label>
+              <input
+                type="datetime-local"
+                className="input-field"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+
             <div className={styles.toggleRow}>
               <span className={styles.toggleLabel}>Status Event Aktif</span>
               <label className={styles.switch}>
@@ -379,6 +437,7 @@ INSERT INTO public.discounts (name, min_purchase, discount_percent, is_active) V
                     <th>Nama Event</th>
                     <th>Min. Pembelian</th>
                     <th>Potongan (%)</th>
+                    <th>Masa Berlaku</th>
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -389,6 +448,12 @@ INSERT INTO public.discounts (name, min_purchase, discount_percent, is_active) V
                       <td style={{ fontWeight: 600 }}>{rule.name}</td>
                       <td>{formatRupiah(rule.min_purchase)}</td>
                       <td style={{ fontWeight: 600, color: 'var(--primary)' }}>{rule.discount_percent}%</td>
+                      <td>
+                        <div style={{ fontSize: '11px', lineHeight: '1.4' }}>
+                          <div>📅 <strong>Mulai:</strong> {formatDateString(rule.start_date)}</div>
+                          <div>🏁 <strong>Selesai:</strong> {formatDateString(rule.end_date)}</div>
+                        </div>
+                      </td>
                       <td>
                         <span 
                           onClick={() => handleToggleActive(rule.id, rule.is_active)}
