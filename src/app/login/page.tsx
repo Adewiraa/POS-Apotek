@@ -35,7 +35,7 @@ export default function LoginPage() {
       const role = profile?.role || 'cashier';
       document.cookie = `demo_role=${role}; path=/; max-age=86400`;
 
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.message || 'Gagal masuk. Silakan periksa kembali email & password Anda.');
     } finally {
@@ -75,7 +75,7 @@ export default function LoginPage() {
       }));
 
       document.cookie = `demo_role=${userRole}; path=/; max-age=86400`;
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (err: any) {
       console.error('Total fallback active:', err);
       const userId = role === 'admin' ? '8f3699a5-8500-45b6-8c22-1037211f23e0' : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
@@ -85,7 +85,7 @@ export default function LoginPage() {
         name: role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina'
       }));
       document.cookie = `demo_role=${role}; path=/; max-age=86400`;
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } finally {
       setLoading(false);
     }

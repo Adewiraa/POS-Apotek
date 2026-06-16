@@ -35,11 +35,20 @@ interface PaymentEntry {
   reference_number: string;
 }
 
+interface DiscountRule {
+  id: string;
+  name: string;
+  min_purchase: number;
+  discount_percent: number;
+  is_active: boolean;
+}
+
 export default function POSPage() {
   const router = useRouter();
   
   // States
   const [batches, setBatches] = useState<DrugBatchJoin[]>([]);
+  const [activeDiscounts, setActiveDiscounts] = useState<DiscountRule[]>([]);
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -257,9 +266,38 @@ export default function POSPage() {
     }
   };
 
+  const fetchActiveDiscounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('discounts')
+        .select('*')
+        .eq('is_active', true)
+        .order('min_purchase', { ascending: false });
+
+      if (error) throw error;
+      setActiveDiscounts(data || []);
+    } catch (err: any) {
+      console.warn('Gagal memuat diskon dari database, menggunakan fallback:', err.message);
+      const local = localStorage.getItem('demo_discounts');
+      if (local) {
+        const parsed = JSON.parse(local).filter((d: any) => d.is_active);
+        parsed.sort((a: any, b: any) => b.min_purchase - a.min_purchase);
+        setActiveDiscounts(parsed);
+      } else {
+        const defaultMock = [
+          { id: '3', name: 'Event Spesial 15%', min_purchase: 250000, discount_percent: 15, is_active: true },
+          { id: '2', name: 'Mega Promo 10%', min_purchase: 150000, discount_percent: 10, is_active: true },
+          { id: '1', name: 'Diskon Grosir 5%', min_purchase: 75000, discount_percent: 5, is_active: true }
+        ];
+        setActiveDiscounts(defaultMock);
+      }
+    }
+  };
+
   useEffect(() => {
     generateInvoice();
     fetchActiveBatches();
+    fetchActiveDiscounts();
   }, []);
 
   const hasRestrictedDrug = cart.some(item =>
@@ -337,13 +375,11 @@ export default function POSPage() {
     let autoDiscount = 0;
     let discountReason = '';
 
-    // Aturan 1: Diskon Grosir berdasarkan total belanja
-    if (subtotal >= 150000) {
-      autoDiscount = Math.round(subtotal * 0.10); // 10%
-      discountReason = 'Diskon Grosir 10% (Subtotal >= Rp 150.000)';
-    } else if (subtotal >= 75000) {
-      autoDiscount = Math.round(subtotal * 0.05); // 5%
-      discountReason = 'Diskon Grosir 5% (Subtotal >= Rp 75.000)';
+    // Aturan 1: Diskon Dinamis dari Database / Pengaturan
+    const appliedDiscount = activeDiscounts.find(d => subtotal >= d.min_purchase);
+    if (appliedDiscount) {
+      autoDiscount = Math.round(subtotal * (appliedDiscount.discount_percent / 100));
+      discountReason = `${appliedDiscount.name} ${appliedDiscount.discount_percent}% (Subtotal >= ${formatRupiah(appliedDiscount.min_purchase)})`;
     }
 
     // Aturan 2: Diskon Promo Kuantitas Obat Bebas (min 3 item, potongan Rp 1.000 per tablet)

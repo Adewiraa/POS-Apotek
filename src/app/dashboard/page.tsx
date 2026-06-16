@@ -234,6 +234,15 @@ export default function DashboardPage() {
                 <p>Grafik penjualan harian, barang terlaris, laba-rugi, dan histori transaksi.</p>
               </div>
             )}
+
+            {/* Pengaturan Diskon: Hanya Admin */}
+            {session?.role === 'admin' && (
+              <div onClick={() => router.push('/discounts')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>🏷️</span>
+                <h4>Pengaturan Diskon</h4>
+                <p>Kelola event diskon otomatis berdasarkan minimal jumlah belanja (Subtotal).</p>
+              </div>
+            )}
           </div>
         </section>
       </main>

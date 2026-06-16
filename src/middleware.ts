@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   if (userRole) {
     // 1. Kasir hanya boleh mengakses /pos dan /dashboard
     if (userRole === 'cashier') {
-      if (pathname.startsWith('/inventory') || pathname.startsWith('/reports') || pathname.startsWith('/controlled-logs')) {
+      if (pathname.startsWith('/inventory') || pathname.startsWith('/reports') || pathname.startsWith('/controlled-logs') || pathname.startsWith('/discounts')) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }
