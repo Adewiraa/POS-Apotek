@@ -24,7 +24,8 @@ export default function DashboardPage() {
     reports: false,
     discounts: false,
     users: false,
-    returns: false
+    returns: false,
+    procurement: false
   });
 
   // Live Stats
@@ -63,6 +64,7 @@ export default function DashboardPage() {
           { role: 'admin', menu_key: 'discounts', is_allowed: true },
           { role: 'admin', menu_key: 'users', is_allowed: true },
           { role: 'admin', menu_key: 'returns', is_allowed: true },
+          { role: 'admin', menu_key: 'procurement', is_allowed: true },
           { role: 'pharmacist', menu_key: 'pos', is_allowed: true },
           { role: 'pharmacist', menu_key: 'inventory', is_allowed: true },
           { role: 'pharmacist', menu_key: 'controlled_logs', is_allowed: true },
@@ -70,13 +72,15 @@ export default function DashboardPage() {
           { role: 'pharmacist', menu_key: 'discounts', is_allowed: false },
           { role: 'pharmacist', menu_key: 'users', is_allowed: false },
           { role: 'pharmacist', menu_key: 'returns', is_allowed: true },
+          { role: 'pharmacist', menu_key: 'procurement', is_allowed: true },
           { role: 'cashier', menu_key: 'pos', is_allowed: true },
           { role: 'cashier', menu_key: 'inventory', is_allowed: false },
           { role: 'cashier', menu_key: 'controlled_logs', is_allowed: false },
           { role: 'cashier', menu_key: 'reports', is_allowed: false },
           { role: 'cashier', menu_key: 'discounts', is_allowed: false },
           { role: 'cashier', menu_key: 'users', is_allowed: false },
-          { role: 'cashier', menu_key: 'returns', is_allowed: true }
+          { role: 'cashier', menu_key: 'returns', is_allowed: true },
+          { role: 'cashier', menu_key: 'procurement', is_allowed: false }
         ];
       }
       const permMap: Record<string, boolean> = {};
@@ -301,6 +305,15 @@ export default function DashboardPage() {
                 <span className={styles.menuIcon}>🔄</span>
                 <h4>Retur Penjualan &amp; Pembelian</h4>
                 <p>Kelola retur obat dari pelanggan atau pengembalian obat kadaluarsa/rusak ke PBF.</p>
+              </div>
+            )}
+
+            {/* Pengadaan / PO ke PBF */}
+            {permissions.procurement && (
+              <div onClick={() => router.push('/procurement')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>🛒</span>
+                <h4>Pengadaan / PO ke PBF</h4>
+                <p>Terbitkan dokumen PO baru ke PBF distributor dan terima pengiriman stok masuk.</p>
               </div>
             )}
 
