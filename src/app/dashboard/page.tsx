@@ -243,6 +243,15 @@ export default function DashboardPage() {
                 <p>Kelola event diskon otomatis berdasarkan minimal jumlah belanja (Subtotal).</p>
               </div>
             )}
+
+            {/* Manajemen Pengguna: Hanya Admin */}
+            {session?.role === 'admin' && (
+              <div onClick={() => router.push('/users')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>👥</span>
+                <h4>Manajemen Pengguna</h4>
+                <p>Kelola data staf apotek, registrasi akun baru, dan atur hak akses/role.</p>
+              </div>
+            )}
           </div>
         </section>
       </main>
