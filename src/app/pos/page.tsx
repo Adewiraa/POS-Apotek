@@ -192,6 +192,155 @@ export default function POSPage() {
     }
   };
 
+  const printInvoiceNota = (
+    invNum: string,
+    cartItems: CartItem[],
+    disc: number,
+    txAmount: number,
+    txTax: number,
+    paidPayments: PaymentEntry[],
+    drName: string,
+    ptName: string,
+    cashierName: string
+  ) => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const subtotalAmt = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+
+    const itemRows = cartItems.map((item, idx) => `
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px; text-align: center;">${idx + 1}</td>
+        <td style="border: 1px solid #000; padding: 6px;">${item.name} (${item.batch_number})</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: center;">${item.quantity}</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: center;">${item.unit}</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: right;">${formatRupiahFull(item.price)}</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: right;">${formatRupiahFull(item.price * item.quantity)}</td>
+      </tr>
+    `).join('');
+
+    const paymentsLabel = paidPayments.map(p => `${p.payment_method.toUpperCase()} (${formatRupiahFull(p.amount)})`).join(', ');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Nota Penjualan - ${invNum}</title>
+  <style>
+    body { font-family: 'Arial', sans-serif; font-size: 13px; color: #000; padding: 20px; line-height: 1.4; }
+    .header-table { width: 100%; margin-bottom: 20px; }
+    .header-logo { font-size: 20px; font-weight: bold; }
+    .title { font-size: 18px; font-weight: bold; text-align: center; text-decoration: underline; margin-bottom: 20px; }
+    .info-table { width: 100%; margin-bottom: 15px; }
+    .info-table td { padding: 3px 0; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .items-table th { border: 1px solid #000; background: #f2f2f2; padding: 8px; font-weight: bold; text-align: center; }
+    .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .summary-table td { padding: 4px; }
+    .signatures { width: 100%; margin-top: 40px; display: flex; justify-content: space-between; }
+    .sig-box { width: 200px; text-align: center; }
+    .sig-space { height: 60px; }
+  </style>
+</head>
+<body>
+  <table class="header-table">
+    <tr>
+      <td>
+        <div class="header-logo">💊 Apotek ApoGo</div>
+        <div style="font-size: 11px;">Jl. Contoh No. 1, Jakarta | Telp: (021) 000-0000</div>
+        <div style="font-size: 11px;">SIA: 123/SIA/2026 | Apoteker: Ade Wiramiharja, S.Farm., Apt.</div>
+      </td>
+      <td style="text-align: right; vertical-align: top;">
+        <div style="font-size: 12px; font-weight: bold;">NOTA PENJUALAN OBAT</div>
+        <div>No: ${invNum}</div>
+        <div>Tanggal: ${dateStr} ${timeStr}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="divider" style="border-top: 2px solid #000; margin-bottom: 15px;"></div>
+
+  <table class="info-table">
+    <tr>
+      <td style="width: 15%;"><strong>Pasien:</strong></td>
+      <td style="width: 35%;">${ptName || 'Umum'}</td>
+      <td style="width: 15%;"><strong>Dokter:</strong></td>
+      <td style="width: 35%;">${drName || '-'}</td>
+    </tr>
+    <tr>
+      <td><strong>Kasir:</strong></td>
+      <td>${cashierName}</td>
+      <td><strong>Metode:</strong></td>
+      <td>${paymentsLabel || 'Tunai'}</td>
+    </tr>
+  </table>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width: 5%;">No</th>
+        <th>Nama Item (Batch)</th>
+        <th style="width: 10%;">Qty</th>
+        <th style="width: 10%;">Satuan</th>
+        <th style="width: 15%;">Harga</th>
+        <th style="width: 20%;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+      <tr>
+        <td colspan="4" style="border: none;"></td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right;">Subtotal:</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatRupiahFull(subtotalAmt)}</td>
+      </tr>
+      ${disc > 0 ? `
+      <tr>
+        <td colspan="4" style="border: none;"></td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right; color: red;">Diskon:</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold; color: red;">-${formatRupiahFull(disc)}</td>
+      </tr>` : ''}
+      <tr>
+        <td colspan="4" style="border: none;"></td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight: bold; text-align: right;">PPN 11%:</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatRupiahFull(txTax)}</td>
+      </tr>
+      <tr>
+        <td colspan="4" style="border: none;"></td>
+        <td style="border: 1px solid #000; padding: 6px; background: #eee; font-weight: bold; text-align: right;">TOTAL:</td>
+        <td style="border: 1px solid #000; padding: 6px; background: #eee; text-align: right; font-weight: bold;">${formatRupiahFull(txAmount)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="signatures">
+    <div class="sig-box">
+      <div>Penerima / Pasien</div>
+      <div class="sig-space"></div>
+      <div>( _____________________ )</div>
+    </div>
+    <div class="sig-box">
+      <div>Hormat Kami,</div>
+      <div class="sig-space"></div>
+      <div>( ${cashierName} )</div>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      window.print();
+    }
+  </script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
+  };
+
   // Multi-Payment states (Split Payment)
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [currentMethod, setCurrentMethod] = useState<'cash' | 'qris' | 'card' | 'insurance'>('cash');
@@ -629,26 +778,44 @@ export default function POSPage() {
         cashierName = session?.name || 'Kasir';
       } catch (_) {}
 
-      // Print struk terlebih dahulu sebelum reset state
-      printReceipt(
-        invoiceNumber,
-        [...cart],
-        discount,
-        totalAmount,
-        tax,
-        checkoutPayments,
-        doctorName,
-        patientName,
-        cashierName
-      );
-
       await Swal.fire({
         title: '✅ Transaksi Berhasil!',
-        html: `Invoice <strong>${invoiceNumber}</strong> telah dicatat.<br/>Struk sedang dicetak.`,
+        html: `Faktur <strong>${invoiceNumber}</strong> telah terekam. Silakan pilih format cetak dokumen di bawah ini:`,
         icon: 'success',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: '🖨️ Cetak Struk (58/80mm)',
+        denyButtonText: '📄 Cetak Nota (A5)',
+        cancelButtonText: '❌ Lewati',
         confirmButtonColor: '#10b981',
-        timer: 3000,
-        timerProgressBar: true
+        denyButtonColor: '#3b82f6',
+        cancelButtonColor: '#6b7280'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          printReceipt(
+            invoiceNumber,
+            [...cart],
+            discount,
+            totalAmount,
+            tax,
+            checkoutPayments,
+            doctorName,
+            patientName,
+            cashierName
+          );
+        } else if (result.isDenied) {
+          printInvoiceNota(
+            invoiceNumber,
+            [...cart],
+            discount,
+            totalAmount,
+            tax,
+            checkoutPayments,
+            doctorName,
+            patientName,
+            cashierName
+          );
+        }
       });
 
       // Reset Kasir
