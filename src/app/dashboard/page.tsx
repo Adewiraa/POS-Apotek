@@ -23,7 +23,8 @@ export default function DashboardPage() {
     controlled_logs: false,
     reports: false,
     discounts: false,
-    users: false
+    users: false,
+    returns: false
   });
 
   // Live Stats
@@ -61,18 +62,21 @@ export default function DashboardPage() {
           { role: 'admin', menu_key: 'reports', is_allowed: true },
           { role: 'admin', menu_key: 'discounts', is_allowed: true },
           { role: 'admin', menu_key: 'users', is_allowed: true },
+          { role: 'admin', menu_key: 'returns', is_allowed: true },
           { role: 'pharmacist', menu_key: 'pos', is_allowed: true },
           { role: 'pharmacist', menu_key: 'inventory', is_allowed: true },
           { role: 'pharmacist', menu_key: 'controlled_logs', is_allowed: true },
           { role: 'pharmacist', menu_key: 'reports', is_allowed: false },
           { role: 'pharmacist', menu_key: 'discounts', is_allowed: false },
           { role: 'pharmacist', menu_key: 'users', is_allowed: false },
+          { role: 'pharmacist', menu_key: 'returns', is_allowed: true },
           { role: 'cashier', menu_key: 'pos', is_allowed: true },
           { role: 'cashier', menu_key: 'inventory', is_allowed: false },
           { role: 'cashier', menu_key: 'controlled_logs', is_allowed: false },
           { role: 'cashier', menu_key: 'reports', is_allowed: false },
           { role: 'cashier', menu_key: 'discounts', is_allowed: false },
-          { role: 'cashier', menu_key: 'users', is_allowed: false }
+          { role: 'cashier', menu_key: 'users', is_allowed: false },
+          { role: 'cashier', menu_key: 'returns', is_allowed: true }
         ];
       }
       const permMap: Record<string, boolean> = {};
@@ -288,6 +292,15 @@ export default function DashboardPage() {
                 <span className={styles.menuIcon}>📝</span>
                 <h4>Register Narkotika &amp; Psikotropika</h4>
                 <p>Buku log pengeluaran obat psikotropika wajib BPOM &amp; Kemenkes RI.</p>
+              </div>
+            )}
+
+            {/* Retur Penjualan & Pembelian */}
+            {permissions.returns && (
+              <div onClick={() => router.push('/returns')} className={`${styles.menuCard} glass-panel`}>
+                <span className={styles.menuIcon}>🔄</span>
+                <h4>Retur Penjualan &amp; Pembelian</h4>
+                <p>Kelola retur obat dari pelanggan atau pengembalian obat kadaluarsa/rusak ke PBF.</p>
               </div>
             )}
 
