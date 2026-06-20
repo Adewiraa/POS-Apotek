@@ -167,8 +167,7 @@ Kasir memproses pembelian obat di meja depan dan memvalidasi kelayakan resep oba
 * **Output Struk Cetak Fisik (Thermal Receipt):**
   ```text
   =====================================
-               ApoGo POS
-            Apotek Modern
+               Apotek ApoGo
   =====================================
   Invoice : INV-20260614-4112
   Tanggal : 14 Juni 2026, 16:40

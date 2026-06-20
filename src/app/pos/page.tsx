@@ -147,8 +147,7 @@ export default function POSPage() {
 </head>
 <body>
   <div class="center">
-    <div class="header-logo">💊 ApoGo POS</div>
-    <div>Apotek Modern</div>
+    <div class="header-logo">💊 Apotek ApoGo</div>
     <div style="font-size:10px">Jl. Contoh No. 1, Jakarta</div>
     <div style="font-size:10px">Telp: (021) 000-0000</div>
   </div>

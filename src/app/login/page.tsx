@@ -98,7 +98,7 @@ export default function LoginPage() {
           <div className={styles.logoCircle}>
             <span className={styles.logoIcon}>💊</span>
           </div>
-          <h1>Apotek Modern POS</h1>
+          <h1>Apotek ApoGo</h1>
           <p>Kelola penjualan, resep, dan inventaris obat secara efisien</p>
         </div>
 
@@ -135,22 +135,6 @@ export default function LoginPage() {
             {loading ? 'Menghubungkan...' : 'Masuk ke Sistem'}
           </button>
         </form>
-
-        <div className={styles.divider}>
-          <span>ATAU MASUK SEBAGAI DEMO</span>
-        </div>
-
-        <div className={styles.demoButtons}>
-          <button onClick={() => handleDemoLogin('admin')} className="btn btn-secondary" style={{ flex: 1, fontSize: '12px', padding: '8px 12px' }}>
-            👑 Admin
-          </button>
-          <button onClick={() => handleDemoLogin('pharmacist')} className="btn btn-secondary" style={{ flex: 1, fontSize: '12px', padding: '8px 12px' }}>
-            🔬 Apoteker
-          </button>
-          <button onClick={() => handleDemoLogin('cashier')} className="btn btn-secondary" style={{ flex: 1, fontSize: '12px', padding: '8px 12px' }}>
-            💵 Kasir
-          </button>
-        </div>
       </div>
     </div>
   );

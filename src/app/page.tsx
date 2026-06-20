@@ -31,7 +31,7 @@ export default function EntryPage() {
     <div className={styles.loadingContainer}>
       <div className={styles.spinnerWrapper}>
         <div className={styles.spinner}></div>
-        <h1 className="animate-pulse-slow">Apotek Modern POS</h1>
+        <h1 className="animate-pulse-slow">Apotek ApoGo</h1>
         <p>Menyiapkan ruang kerja kasir & inventaris...</p>
       </div>
     </div>

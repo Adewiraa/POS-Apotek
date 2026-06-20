@@ -216,7 +216,7 @@ export default function DashboardPage() {
         <div className={styles.brand}>
           <span className={styles.logo}>💊</span>
           <div>
-            <h2>ApoGo</h2>
+            <h2>Apotek ApoGo</h2>
             <span className={styles.badge}>Sistem POS Apotek</span>
           </div>
         </div>
