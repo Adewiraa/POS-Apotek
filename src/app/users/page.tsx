@@ -185,8 +185,13 @@ export default function UserManagementPage() {
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim()) {
-      Swal.fire('Error', 'Nama lengkap dan email wajib diisi.', 'error');
+      Swal.fire('Error', 'Nama lengkap dan username wajib diisi.', 'error');
       return;
+    }
+
+    let finalEmail = email.trim();
+    if (!finalEmail.includes('@')) {
+      finalEmail = `${finalEmail}@apotek.com`;
     }
 
     if (!editingId && !password.trim()) {
@@ -206,7 +211,7 @@ export default function UserManagementPage() {
         if (dbError) {
           const updated = profiles.map(p => {
             if (p.id === editingId) {
-              return { ...p, full_name: fullName, email, role };
+              return { ...p, full_name: fullName, email: finalEmail, role };
             }
             return p;
           });
@@ -229,7 +234,7 @@ export default function UserManagementPage() {
             .from('profiles')
             .update({
               full_name: fullName,
-              email,
+              email: finalEmail,
               role
             })
             .eq('id', editingId);
@@ -255,7 +260,7 @@ export default function UserManagementPage() {
           const newProfile: Profile = {
             id: Math.random().toString(36).substring(2, 9),
             full_name: fullName,
-            email,
+            email: finalEmail,
             role,
             updated_at: new Date().toISOString()
           };
@@ -273,7 +278,7 @@ export default function UserManagementPage() {
           );
 
           const { data: signUpData, error: authError } = await tempSupabase.auth.signUp({
-            email,
+            email: finalEmail,
             password
           });
 
@@ -286,7 +291,7 @@ export default function UserManagementPage() {
             .insert([{
               id: signUpData.user.id,
               full_name: fullName,
-              email,
+              email: finalEmail,
               role
             }]);
 
@@ -474,12 +479,12 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
             </div>
 
             <div className={styles.formGroup}>
-              <label>Alamat Email</label>
+              <label>Username</label>
               <input
-                type="email"
+                type="text"
                 className="input-field"
-                placeholder="staf@apotek.com"
-                value={email}
+                placeholder="Contoh: budi, jaka, rani"
+                value={email.includes('@') ? email.split('@')[0] : email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
@@ -539,8 +544,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Nama Pengguna</th>
-                    <th>Email</th>
+                    <th>Nama Lengkap</th>
+                    <th>Username</th>
                     <th>Hak Akses</th>
                     <th>Aksi</th>
                   </tr>
@@ -549,7 +554,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
                   {profiles.map((profile) => (
                     <tr key={profile.id}>
                       <td style={{ fontWeight: 600 }}>{profile.full_name}</td>
-                      <td>{profile.email || '-'}</td>
+                      <td>{profile.email ? profile.email.split('@')[0] : '-'}</td>
                       <td>
                         <span className={`${styles.badgeRole} ${getRoleClass(profile.role)}`}>
                           {getRoleLabel(profile.role)}

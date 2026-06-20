@@ -19,8 +19,28 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      let loginEmail = email.trim();
+      if (!loginEmail.includes('@')) {
+        // Search profiles for email prefix
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email')
+            .ilike('email', `${loginEmail}@%`)
+            .limit(1)
+            .maybeSingle();
+          if (profile?.email) {
+            loginEmail = profile.email;
+          } else {
+            loginEmail = `${loginEmail}@apotek.com`;
+          }
+        } catch (_) {
+          loginEmail = `${loginEmail}@apotek.com`;
+        }
+      }
+
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: loginEmail,
         password,
       });
 
@@ -38,7 +58,7 @@ export default function LoginPage() {
 
       window.location.href = '/dashboard';
     } catch (err: any) {
-      setError(err.message || 'Gagal masuk. Silakan periksa kembali email & password Anda.');
+      setError(err.message || 'Gagal masuk. Silakan periksa kembali username & password Anda.');
     } finally {
       setLoading(false);
     }
@@ -107,12 +127,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className={styles.form}>
           <div className={styles.inputGroup}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Username</label>
             <input
               id="email"
-              type="email"
+              type="text"
               className="input-field"
-              placeholder="nama@apotek.com"
+              placeholder="Contoh: admin, kasir, apoteker"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
