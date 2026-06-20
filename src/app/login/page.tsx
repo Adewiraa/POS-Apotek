@@ -49,11 +49,19 @@ export default function LoginPage() {
       // Tarik profile untuk mendapatkan role pengguna dari Supabase
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, full_name')
+        .select('role, full_name, email')
         .eq('id', data.user?.id)
         .single();
 
       const role = profile?.role || 'cashier';
+      const name = profile?.full_name || data.user?.email || 'Staf';
+
+      localStorage.setItem('demo_session', JSON.stringify({
+        user: { id: data.user?.id, email: profile?.email || data.user?.email },
+        role,
+        name
+      }));
+
       document.cookie = `demo_role=${role}; path=/; max-age=86400`;
 
       window.location.href = '/dashboard';
