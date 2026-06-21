@@ -544,6 +544,9 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.drug_returns TO anon, authenticat
                       {searchingInvoiceLoading ? 'Mencari...' : 'Cari'}
                     </button>
                   </div>
+                  <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    💡 Coba gunakan invoice demo: <code style={{ cursor: 'pointer', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)' }} onClick={() => setSearchInvoice('INV-20260616-9233')}>INV-20260616-9233</code>
+                  </div>
                 </div>
 
                 {invoiceItems.length > 0 && (

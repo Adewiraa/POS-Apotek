@@ -889,6 +889,32 @@ export default function POSPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <div style={{ marginTop: '8px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>💡 Saran Pencarian:</span>
+            {['Paracetamol', 'Amoxicillin', 'Alprazolam', 'Nellco'].map(term => (
+              <button
+                key={term}
+                type="button"
+                onClick={() => setSearch(term)}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  borderRadius: '12px',
+                  padding: '3px 10px',
+                  color: '#10b981',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.25)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+              >
+                {term}
+              </button>
+            ))}
+          </div>
           {search && (
             <div className={styles.searchResults}>
               {filteredBatches.map(batch => (
