@@ -93,15 +93,13 @@ Untuk menjalankan aplikasi secara utuh dengan integrasi database, silakan salin 
 
 ---
 
-## 👥 Akun Akses Default (Login)
+## 👁️ Eksplorasi Mode Demo (View-Only)
 
-Gunakan kredensial berikut untuk menguji sistem dengan berbagai tingkat hak akses:
+Untuk mencoba dan menguji sistem secara langsung tanpa perlu memasukkan kredensial, silakan klik tombol **"Coba Mode Demo (View-Only)"** pada halaman login utama.
 
-| Peran (Role) | Username | Password | Deskripsi Akses |
-| :--- | :--- | :--- | :--- |
-| **👑 Administrator** | `admin` | `password123` | Hak penuh untuk merubah sistem & perizinan staf. |
-| **🔬 Apoteker** | `apoteker` | `password123` | Mengelola resep obat, stok obat, & log narkotika. |
-| **💵 Staf Kasir** | `kasir` | `password123` | Fokus pada transaksi belanja pelanggan & cetak struk. |
+Dalam mode peninjau ini:
+* Anda dapat menjelajahi seluruh menu operasional (Layar Kasir POS, Gudang & Inventaris, PO Pengadaan PBF, Retur Obat, Laporan Keuangan, dan Manajemen Staf).
+* Semua aksi penulisan data (`INSERT`, `UPDATE`, `DELETE`) dinonaktifkan secara aman menggunakan notifikasi interaktif untuk menjaga stabilitas data demo.
 
 ---
 *Dikembangkan dengan penuh dedikasi untuk efisiensi operasional apotek modern.* 💊
