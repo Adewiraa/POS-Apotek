@@ -72,12 +72,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = async (role: 'admin' | 'pharmacist' | 'cashier') => {
+  const handleDemoLogin = async (role: 'admin' | 'pharmacist' | 'cashier' | 'demo') => {
     setLoading(true);
     setError(null);
     try {
       const email = role === 'admin' 
         ? 'admin@demo.com' 
+        : role === 'demo'
+        ? 'demo@demo.com'
         : 'kasir@demo.com';
 
       const { data, error: authError } = await supabase.auth.signInWithPassword({
@@ -90,12 +92,22 @@ export default function LoginPage() {
 
       if (authError) {
         console.warn('Supabase Auth error during demo login, falling back to local simulation:', authError.message);
-        userId = role === 'admin' ? '8f3699a5-8500-45b6-8c22-1037211f23e0' : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
+        userId = role === 'admin' 
+          ? '8f3699a5-8500-45b6-8c22-1037211f23e0' 
+          : role === 'demo'
+          ? 'd3edd0ab-0000-0000-0000-000000000000'
+          : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
         userEmail = email;
       }
 
       const userRole = role; 
-      const userName = role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina';
+      const userName = role === 'admin' 
+        ? 'Ade Wiramiharja (Admin)' 
+        : role === 'pharmacist' 
+        ? 'Apoteker Jaka' 
+        : role === 'demo'
+        ? 'Peninjau Demo (Observer)'
+        : 'Kasir Rina';
 
       localStorage.setItem('demo_session', JSON.stringify({
         user: { id: userId, email: userEmail },
@@ -107,11 +119,21 @@ export default function LoginPage() {
       window.location.href = '/dashboard';
     } catch (err: any) {
       console.error('Total fallback active:', err);
-      const userId = role === 'admin' ? '8f3699a5-8500-45b6-8c22-1037211f23e0' : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
+      const userId = role === 'admin' 
+        ? '8f3699a5-8500-45b6-8c22-1037211f23e0' 
+        : role === 'demo'
+        ? 'd3edd0ab-0000-0000-0000-000000000000'
+        : 'e9add0ab-42ac-47c3-a554-97d3f80960d5';
       localStorage.setItem('demo_session', JSON.stringify({
-        user: { id: userId, email: role === 'admin' ? 'admin@demo.com' : 'kasir@demo.com' },
+        user: { id: userId, email: role === 'admin' ? 'admin@demo.com' : role === 'demo' ? 'demo@demo.com' : 'kasir@demo.com' },
         role: role,
-        name: role === 'admin' ? 'Ade Wiramiharja (Admin)' : role === 'pharmacist' ? 'Apoteker Jaka' : 'Kasir Rina'
+        name: role === 'admin' 
+          ? 'Ade Wiramiharja (Admin)' 
+          : role === 'pharmacist' 
+          ? 'Apoteker Jaka' 
+          : role === 'demo'
+          ? 'Peninjau Demo (Observer)'
+          : 'Kasir Rina'
       }));
       document.cookie = `demo_role=${role}; path=/; max-age=86400`;
       window.location.href = '/dashboard';
@@ -183,6 +205,20 @@ export default function LoginPage() {
             {loading ? 'Menghubungkan...' : 'Masuk ke Sistem'}
           </button>
         </form>
+
+        <div className={styles.divider}>
+          <span>atau</span>
+        </div>
+
+        <button 
+          type="button" 
+          onClick={() => handleDemoLogin('demo')} 
+          className="btn btn-secondary" 
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          disabled={loading}
+        >
+          👁️ Coba Mode Demo (View-Only)
+        </button>
       </div>
     </div>
   );

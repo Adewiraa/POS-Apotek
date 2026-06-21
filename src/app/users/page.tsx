@@ -35,7 +35,7 @@ export default function UserManagementPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'pharmacist' | 'cashier'>('cashier');
+  const [role, setRole] = useState<'admin' | 'pharmacist' | 'cashier' | 'demo'>('cashier');
   const [submitLoading, setSubmitLoading] = useState(false);
 
   // Check current session & dynamic permission on mount
@@ -184,6 +184,24 @@ export default function UserManagementPage() {
 
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Menambah/mengedit pengguna dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     if (!fullName.trim() || !email.trim()) {
       Swal.fire('Error', 'Nama lengkap dan username wajib diisi.', 'error');
       return;
@@ -310,6 +328,23 @@ export default function UserManagementPage() {
   };
 
   const handleDeleteProfile = async (id: string) => {
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Menghapus pengguna dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     if (id === currentUserSession?.user?.id) {
       Swal.fire('Gagal', 'Anda tidak dapat menghapus akun Anda sendiri.', 'error');
       return;
@@ -349,6 +384,23 @@ export default function UserManagementPage() {
   };
 
   const handleTogglePermission = async (roleKey: string, menuKey: string, currentAllowed: boolean) => {
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Mengubah izin akses menu dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     const newAllowed = !currentAllowed;
 
     // Build next state locally
@@ -417,6 +469,7 @@ export default function UserManagementPage() {
       case 'admin': return '👑 Admin';
       case 'pharmacist': return '🔬 Apoteker';
       case 'cashier': return '💵 Kasir';
+      case 'demo': return '👁️ Demo';
       default: return r;
     }
   };
@@ -426,6 +479,7 @@ export default function UserManagementPage() {
       case 'admin': return styles.roleAdmin;
       case 'pharmacist': return styles.rolePharmacist;
       case 'cashier': return styles.roleCashier;
+      case 'demo': return styles.roleCashier;
       default: return '';
     }
   };
@@ -514,6 +568,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
                 <option value="cashier">Kasir (💵 cashier)</option>
                 <option value="pharmacist">Apoteker (🔬 pharmacist)</option>
                 <option value="admin">Administrator (👑 admin)</option>
+                <option value="demo">Demo / Observer (👁️ demo)</option>
               </select>
             </div>
 
@@ -596,11 +651,11 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO anon, authenticated, 
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '16px' }}>
-          {['admin', 'pharmacist', 'cashier'].map(r => (
+          {['admin', 'pharmacist', 'cashier', 'demo'].map(r => (
             <div key={r} className={styles.roleCard}>
               <div className={styles.roleCardHeader}>
                 <span className={styles.roleCardTitle}>
-                  {r === 'admin' ? '👑 Admin' : r === 'pharmacist' ? '🔬 Apoteker' : '💵 Kasir'}
+                  {r === 'admin' ? '👑 Admin' : r === 'pharmacist' ? '🔬 Apoteker' : r === 'cashier' ? '💵 Kasir' : '👁️ Demo'}
                 </span>
                 <span className={styles.badge} style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
                   {r}

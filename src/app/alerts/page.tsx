@@ -207,6 +207,24 @@ export default function AlertsPage() {
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Mengubah pengaturan alert dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     setSubmitLoading(true);
 
     try {

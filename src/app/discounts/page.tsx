@@ -135,6 +135,23 @@ export default function DiscountsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Membuat/mengedit event diskon dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     const cleanMinPurchase = Number(minPurchase.replace(/\D/g, ''));
     const cleanPercent = Number(discountPercent);
     const cleanStartDate = startDate ? new Date(startDate).toISOString() : null;
@@ -230,6 +247,23 @@ export default function DiscountsPage() {
 
   // Toggle Active Status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Mengaktifkan/nonaktifkan diskon dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     try {
       if (dbError) {
         const updatedList = discounts.map(d => d.id === id ? { ...d, is_active: !currentStatus } : d);
@@ -251,6 +285,23 @@ export default function DiscountsPage() {
 
   // Delete Discount
   const handleDelete = async (id: string) => {
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Menghapus event diskon dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     const confirm = await Swal.fire({
       title: 'Apakah Anda yakin?',
       text: 'Event diskon ini akan dihapus dari sistem.',

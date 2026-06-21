@@ -188,6 +188,24 @@ export default function ProcurementPage() {
 
   const handleCreatePO = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Membuat Purchase Order dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     if (!supplierName.trim()) {
       Swal.fire('Warning', 'Silakan masukkan nama PBF/Supplier.', 'warning');
       return;
@@ -327,6 +345,23 @@ export default function ProcurementPage() {
 
   // Submit received PO items to add to inventory & logs
   const submitPOReceipt = async (batchesToCreate: typeof receivingBatches) => {
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Penerimaan barang PO dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     setSubmitLoading(true);
     try {
       if (dbError) {

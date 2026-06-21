@@ -264,6 +264,24 @@ export default function ControlledLogsPage() {
   // Handle manual mutation submission
   const handleSubmitMutation = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user is logged in as demo role
+    try {
+      const sessionStr = localStorage.getItem('demo_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        if (session.role === 'demo') {
+          Swal.fire({
+            title: 'Mode Demo',
+            text: 'Anda masuk menggunakan Akun Demo. Mencatat mutasi manual dinonaktifkan dalam mode ini.',
+            icon: 'warning',
+            confirmButtonColor: '#3b82f6'
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+
     if (!selectedDrugId || !selectedBatchId) {
       Swal.fire('Input Belum Lengkap', 'Pilih obat dan nomor batch terlebih dahulu.', 'warning');
       return;

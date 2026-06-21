@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
     full_name TEXT,
     email VARCHAR(255),
-    role VARCHAR(50) DEFAULT 'cashier' CHECK (role IN ('admin', 'pharmacist', 'cashier')),
+    role VARCHAR(50) DEFAULT 'cashier' CHECK (role IN ('admin', 'pharmacist', 'cashier', 'demo')),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -60,7 +60,7 @@ CREATE TRIGGER on_auth_user_created
 
 CREATE TABLE IF NOT EXISTS public.role_permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'pharmacist', 'cashier')),
+    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'pharmacist', 'cashier', 'demo')),
     menu_key VARCHAR(100) NOT NULL,
     is_allowed BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -101,7 +101,14 @@ INSERT INTO public.role_permissions (role, menu_key, is_allowed) VALUES
 ('cashier', 'controlled_logs', false),
 ('cashier', 'reports', false),
 ('cashier', 'discounts', false),
-('cashier', 'users', false)
+('cashier', 'users', false),
+-- Demo permissions
+('demo', 'pos', true),
+('demo', 'inventory', true),
+('demo', 'controlled_logs', true),
+('demo', 'reports', true),
+('demo', 'discounts', true),
+('demo', 'users', true)
 ON CONFLICT (role, menu_key) DO UPDATE SET is_allowed = EXCLUDED.is_allowed;
 
 

@@ -7,7 +7,7 @@ import styles from './dashboard.module.css';
 
 interface UserSession {
   user: { id: string; email: string };
-  role: 'admin' | 'pharmacist' | 'cashier';
+  role: 'admin' | 'pharmacist' | 'cashier' | 'demo';
   name: string;
 }
 
@@ -84,7 +84,16 @@ export default function DashboardPage() {
           { role: 'cashier', menu_key: 'users', is_allowed: false },
           { role: 'cashier', menu_key: 'returns', is_allowed: true },
           { role: 'cashier', menu_key: 'procurement', is_allowed: false },
-          { role: 'cashier', menu_key: 'alerts', is_allowed: false }
+          { role: 'cashier', menu_key: 'alerts', is_allowed: false },
+          { role: 'demo', menu_key: 'pos', is_allowed: true },
+          { role: 'demo', menu_key: 'inventory', is_allowed: true },
+          { role: 'demo', menu_key: 'controlled_logs', is_allowed: true },
+          { role: 'demo', menu_key: 'reports', is_allowed: true },
+          { role: 'demo', menu_key: 'discounts', is_allowed: true },
+          { role: 'demo', menu_key: 'users', is_allowed: true },
+          { role: 'demo', menu_key: 'returns', is_allowed: true },
+          { role: 'demo', menu_key: 'procurement', is_allowed: true },
+          { role: 'demo', menu_key: 'alerts', is_allowed: true }
         ];
       }
       const permMap: Record<string, boolean> = {};
@@ -203,6 +212,7 @@ export default function DashboardPage() {
     admin: 'Administrator',
     pharmacist: 'Apoteker',
     cashier: 'Kasir',
+    demo: 'Demo / Observer',
   };
 
   const formatRupiah = (num: number) => {
